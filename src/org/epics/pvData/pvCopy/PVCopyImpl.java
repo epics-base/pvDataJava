@@ -39,7 +39,11 @@ class PVCopyImpl {
 			}
 		}
 		ThePVCopyImpl impl = new ThePVCopyImpl(pvRecord);
-		impl.init(pvRequest);
+		PVStructure pvStruct = pvRequest;
+		if(pvRequest.getSubField("field")!=null) {
+			pvStruct = pvRequest.getStructureField("field");
+		}
+		impl.init(pvStruct);
 		return impl;
 	}
 	
@@ -254,7 +258,7 @@ class PVCopyImpl {
             	PVField pvField = pvFromFields[i];
             	if(pvField.getField().getType()==Type.structure) {
             		PVStructure pvStruct = (PVStructure)pvField;
-            		PVField pvLeaf = pvStruct.getSubField("leaf");
+            		PVField pvLeaf = pvStruct.getSubField("leaf.source");
             		if(pvLeaf!=null && (pvLeaf instanceof PVString)){
             			PVString pvString = (PVString)pvLeaf;
             			PVField pvRecordField = pvRecord.getSubField(pvString.get());
@@ -307,7 +311,7 @@ class PVCopyImpl {
             	PVField pvRequest = pvFromRequestFields[indRequestFields];
             	if(pvRequest.getField().getType()==Type.structure) {
             		PVStructure pvStruct = (PVStructure)pvRequest;
-            		PVField pvLeaf = pvStruct.getSubField("leaf");
+            		PVField pvLeaf = pvStruct.getSubField("leaf.source");
             		if(pvLeaf!=null && (pvLeaf instanceof PVString)){
             			PVString pvString = (PVString)pvLeaf;
             			PVField pvRecordField = pvRecord.getSubField(pvString.get());
@@ -423,7 +427,11 @@ class PVCopyImpl {
                     updateStructureNodeSetBitSet((PVStructure)pvField,(StructureNode)node,bitSet); 
                 } else {
                     RecordNode recordNode = (RecordNode)node;
-                    updateSubFieldSetBitSet(pvField,recordNode.recordPVField,bitSet);
+                    if(node.shareData) {
+                    	bitSet.set(pvField.getFieldOffset());
+                    } else {
+                        updateSubFieldSetBitSet(pvField,recordNode.recordPVField,bitSet);
+                    }
                 }
             }
         }

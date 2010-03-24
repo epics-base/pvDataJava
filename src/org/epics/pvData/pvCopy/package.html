@@ -10,7 +10,7 @@
 <body>
 <h1 style="text-align: center">EPICS PVData: pvCopy<br />
 package: org.epics.pvData.pvCopy<br />
-2010.03.03</h1>
+2010.03.22</h1>
 CONTENTS 
 
 <div class="toc">
@@ -387,8 +387,10 @@ processed before data is fetched.</p>
 <pre>   &lt;structure name = "field"&gt;
        ...
        &lt;structure name = "value"&gt;
-          &lt;scalar name = "source" scalarType = "string"&gt;value&lt;/scalar&gt;
-          &lt;scalar name = "shareData" scalarType = "string"&gt;true&lt;/scalar&gt;
+           &lt;structure name = "leaf"&gt;
+              &lt;scalar name = "source" scalarType = "string"&gt;value&lt;/scalar&gt;
+              &lt;scalar name = "shareData" scalarType = "string"&gt;true&lt;/scalar&gt;
+           &lt;/structure&gt;
        &lt;/structure&gt;
        ...
    &lt;/structure&gt;</pre>

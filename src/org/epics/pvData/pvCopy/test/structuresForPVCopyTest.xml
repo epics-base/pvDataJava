@@ -2,6 +2,9 @@
 <database>
 
 <structure structureName = "powerFromPowerSupply">
+<structure name = "record">
+        <scalar name = "process" scalarType = "string">true</scalar>
+    </structure>
     <structure name = "field">
         <scalar name = "fieldList" scalarType = "string">
            alarm,timeStamp,power.value
@@ -11,7 +14,7 @@
 
 <structure structureName = "powerFromPowerSupplyMonitorOptions">
     <structure name = "record">
-        <scalar name = "queueSize" scalarType = "int">2</scalar>
+        <scalar name = "queueSize" scalarType = "string">2</scalar>
     </structure>
     <structure name = "field">
         <scalar name = "fieldList" scalarType = "string">

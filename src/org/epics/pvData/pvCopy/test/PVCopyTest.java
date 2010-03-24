@@ -77,8 +77,10 @@ public class PVCopyTest extends TestCase {
         pvRecord = master.findRecord("powerSupply");
         pvRequest = master.findStructure("powerFromPowerSupply");
         assertTrue(pvRequest!=null);
+System.out.println("pvRequest " + pvRequest);
         pvCopy = PVCopyFactory.create(pvRecord, pvRequest,"field");
         pvCopyStructure = pvCopy.createPVStructure();
+System.out.println("pvCopyStructure " + pvCopyStructure);
         bitSet = new BitSet(pvCopyStructure.getNumberFields());
         pvCopy.initCopy(pvCopyStructure, bitSet, true);
         System.out.println(pvCopyStructure.toString());

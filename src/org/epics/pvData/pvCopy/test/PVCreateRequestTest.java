@@ -31,7 +31,7 @@ public class PVCreateRequestTest extends TestCase {
         request = "record[process=true]field(alarm,timeStamp,power.value)";
         pvRequest = PVCopyFactory.createRequest(request);
         System.out.printf("request %s%n%s%n",request,pvRequest.toString());
-        request = "record[process=true]field(alarm{alarm},timeStamp{timeStamp},power{power.value})";
+        request = "record[process=true]field(alarm,timeStamp[algorithm=onChange,causeMonitor=false],power{power.value,power.alarm})";
         pvRequest = PVCopyFactory.createRequest(request);
         System.out.printf("request %s%n%s%n",request,pvRequest.toString());
         request = "record[process=true,xxx=yyy]field(alarm,timeStamp[shareData=true],power.value)";

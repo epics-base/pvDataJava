@@ -75,8 +75,94 @@ class CreateRequestImpl {
     	}
     	return pvStructure;
 	}
-	
-	private static void createRequestOptions(PVStructure pvParent,String request) {
+
+	private static int findMatchingBrace(String request,int index) {
+		int closeBrace = request.indexOf('}', index+1);
+		if(closeBrace==-1) return -1;
+		int openBrace = request.indexOf('{', index+1);
+		if(openBrace==-1) return closeBrace;
+		if(openBrace>closeBrace) return closeBrace;
+		int nextClose = request.indexOf('}', openBrace+1);
+		if(nextClose==-1) return -1;
+		return findMatchingBrace(request,nextClose);
+	}
+    private static void createFieldRequest(PVStructure pvParent,String request,boolean fieldListOK) {
+    	request = request.trim();
+    	if(request.length()<=0) return;
+    	int comma = request.indexOf(',');
+    	int openBrace = request.indexOf('{');
+    	int openBracket = request.indexOf('[');
+    	if(openBrace>=0 || openBracket>=0) fieldListOK = false;
+    	if(openBrace>=0 && (comma==-1 || comma>openBrace)) {
+    		//find matching brace
+    		int closeBrace = findMatchingBrace(request,openBrace);
+    		if(closeBrace==-1) {
+    			throw new IllegalArgumentException(request + "mismatched { }");
+    		}
+    		String fieldName = request.substring(0,openBrace);
+    		PVStructure pvStructure = pvDataCreate.createPVStructure(pvParent, fieldName, new Field[0]);
+    		createFieldRequest(pvStructure,request.substring(openBrace+1,closeBrace),false);
+    		pvParent.appendPVField(pvStructure);
+    		if(request.length()>closeBrace+1) {
+    			if(request.charAt(closeBrace+1) != ',') {
+    				throw new IllegalArgumentException(request + "misssing , after }");
+    			}
+    			createFieldRequest(pvParent,request.substring(closeBrace+2),false);
+    		}
+    		return;
+    	}
+    	if(openBracket==-1 && fieldListOK) {
+    			PVString pvString = (PVString)pvDataCreate.createPVScalar(pvParent, "fieldList", ScalarType.pvString);
+    			pvString.put(request);
+    			pvParent.appendPVField(pvString);
+    			return;
+    	}
+    	if(openBracket!=-1 && (comma==-1 || comma>openBracket)) {
+    		int closeBracket = request.indexOf(']');
+			if(closeBracket==-1) {
+				throw new IllegalArgumentException(request + "option does not have matching []");
+			}
+			if(request.lastIndexOf(',')>closeBracket) {
+				createLeafFieldRequest(pvParent,request.substring(0, closeBracket+1));
+				int nextComma = request.indexOf(',', closeBracket);
+				createFieldRequest(pvParent,request.substring(nextComma+1),false);
+			}
+			return;
+    	}
+    	if(comma!=-1) {
+    		createLeafFieldRequest(pvParent,request.substring(0, comma));
+    		createFieldRequest(pvParent,request.substring(comma+1),false);
+    		return;
+    	}
+        createLeafFieldRequest(pvParent,request);
+    }
+   
+    public static void createLeafFieldRequest(PVStructure pvParent,String request) {
+    	int openBracket = request.indexOf('[');
+    	String fullName = request;
+    	if(openBracket>=0) fullName = request.substring(0,openBracket);
+    	int indLast = fullName.lastIndexOf('.');
+		String fieldName = fullName;
+		if(indLast>1) fieldName = fullName.substring(indLast+1);
+    	PVStructure pvStructure = pvDataCreate.createPVStructure(pvParent, fieldName, new Field[0]);
+		PVStructure pvLeaf = pvDataCreate.createPVStructure(pvStructure,"leaf", new Field[0]);
+		PVString pvString = (PVString)pvDataCreate.createPVScalar(pvLeaf, "source", ScalarType.pvString);
+		pvString.put(fullName);
+		pvLeaf.appendPVField(pvString);
+		if(openBracket>0) {
+			int closeBracket = request.indexOf(']');
+			if(closeBracket==-1) {
+				throw new IllegalArgumentException(request + "option does not have matching []");
+			}
+			createRequestOptions(pvLeaf,request.substring(openBracket+1, closeBracket));
+		}
+		pvStructure.appendPVField(pvLeaf);
+		pvParent.appendPVField(pvStructure);
+    }
+    
+    private static void createRequestOptions(PVStructure pvParent,String request) {
+		request = request.trim();
+		if(request.length()<=1) return;
     	String[] items = commaPattern.split(request);
     	for(int j=0; j<items.length; j++) {
     		String[] names = equalPattern.split(items[j]);
@@ -89,98 +175,4 @@ class CreateRequestImpl {
         }
     	return;
     }
-    
-    private static void createFieldRequest(PVStructure pvParent,String request,boolean fieldListOK) {
-    	request = request.trim();
-    	if(request.length()<=0) return;
-    	int firstBrace = request.indexOf('{');
-    	if(firstBrace>=0) {
-    		int firstComma = request.indexOf(',');
-    		while(firstComma!=-1 && firstComma<firstBrace) {
-    			String firstPart = request.substring(0, firstComma);
-    			createFieldRequest(pvParent,firstPart,false);
-    			request = request.substring(firstComma+1);
-    			firstBrace = request.indexOf('{');
-    			firstComma = request.indexOf(',');
-    		}
-    		String fieldName = request.substring(0,firstBrace);
-    		PVStructure pvStructure = pvDataCreate.createPVStructure(pvParent, fieldName, new Field[0]);
-    		int indRight = firstBrace + 1;
-    		int numLeft = 1;
-    		int numRight = 0;
-    		while(true) { // find matching right brace for start brace
-    			int indLeft = request.indexOf('{', indRight);
-    			indRight = request.indexOf('}', indRight);
-    			if(indRight==-1) {
-    				throw new IllegalArgumentException(request + "mismatched { }");
-    			}
-    			if(indLeft!=-1 && indLeft<indRight) {
-    				numLeft++;
-    				indRight = indLeft + 1;
-    				continue;
-    			}
-    			numRight++;
-    			if(numRight==numLeft) break;
-    			indRight++;
-    		}
-    		createFieldRequest(pvStructure,request.substring(firstBrace+1, indRight),false);
-    		pvParent.appendPVField(pvStructure);
-    		if(request.length()<=indRight+2) return;
-    		createFieldRequest(pvParent,request.substring(indRight+2),false);
-    		return;
-    	}
-    	int openBracket = request.indexOf('[');
-    	if(openBracket==-1) {
-    		if(fieldListOK) {
-    			PVString pvString = (PVString)pvDataCreate.createPVScalar(pvParent, "fieldList", ScalarType.pvString);
-    			pvString.put(request);
-    			pvParent.appendPVField(pvString);
-    		} else {
-    			String[] fullFields = commaPattern.split(request);
-    			for(int i=0; i<fullFields.length; i++) {
-    				String fullName = fullFields[i];
-    				int indLast = fullName.lastIndexOf('.');
-    				String fieldName = fullName;
-    				if(indLast>1) fieldName = fullName.substring(indLast+1);
-    				PVStructure pvStructure = pvDataCreate.createPVStructure(pvParent, fieldName, new Field[0]);
-    				PVString pvString = (PVString)pvDataCreate.createPVScalar(pvStructure, "leaf", ScalarType.pvString);
-    				pvString.put(fullName);
-    				pvStructure.appendPVField(pvString);
-     				pvParent.appendPVField(pvStructure);
-    			}
-    		}
-    		return;
-    	}
-    	int firstComma = request.indexOf(',');
-    	while(firstComma!=-1 && firstComma<openBracket) {
-    		String fullName = request.substring(0,firstComma);
-    		int indLast = fullName.lastIndexOf('.');
-    		String fieldName = fullName;
-    		if(indLast>1) fieldName = fullName.substring(indLast+1);
-    		PVStructure pvStructure = pvDataCreate.createPVStructure(pvParent, fieldName, new Field[0]);
-    		PVString pvString = (PVString)pvDataCreate.createPVScalar(pvStructure, "leaf", ScalarType.pvString);
-    		pvString.put(fullName);
-    		pvStructure.appendPVField(pvString);
-    		pvParent.appendPVField(pvStructure);
-    		request = request.substring(firstComma+1);
-    		openBracket = request.indexOf('[');
-    		firstComma = request.indexOf(',');
-    	}
-    	int closeBracket = request.indexOf(']');
-    	if(closeBracket==-1) {
-    		throw new IllegalArgumentException(request + "option does not have matching []");
-    	}
-    	String fullName = request.substring(0,openBracket);
-    	int indLast = fullName.lastIndexOf('.');
-    	String fieldName = fullName;
-    	if(indLast>1) fieldName = fullName.substring(indLast+1);
-    	PVStructure pvStructure = pvDataCreate.createPVStructure(pvParent, fieldName, new Field[0]);
-    	PVString pvString = (PVString)pvDataCreate.createPVScalar(pvStructure, "leaf", ScalarType.pvString);
-    	pvString.put(fullName);
-    	pvStructure.appendPVField(pvString);
-    	createRequestOptions(pvStructure,request.substring(openBracket+1, closeBracket));
-    	pvParent.appendPVField(pvStructure);
-    	if(request.length()>0) createFieldRequest(pvParent,request.substring(closeBracket+2),false);
-    	return;
-    } 
 }
