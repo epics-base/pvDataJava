@@ -10,13 +10,13 @@
 <body>
 <h1 style="text-align: center">EPICS pvData: monitor<br />
 package: org.epics.pvData.monitor<br />
-2010.03.12</h1>
+2010.03.22</h1>
 CONTENTS 
 
 <div class="toc">
 <ul>
   <li><a href="#Overview">Overview</a></li>
-  <li><a href="#Standard">Standard Monitor Requests</a>
+  <li><a href="#Standard">Standard Monitor Requests</a> 
     <ul>
       <li><a href="#Record">Record Options</a></li>
       <li><a href="#Field">Field Options</a></li>
@@ -26,7 +26,7 @@ CONTENTS
     </ul>
   </li>
   <li><a href="#Implementi">Implementing New Monitor Algorithms</a></li>
-  <li><a href="#Monitor1">Monitor Interfaces</a>
+  <li><a href="#Monitor1">Monitor Interfaces</a> 
     <ul>
       <li><a href="#Monitor2">Monitor</a></li>
       <li><a href="#MonitorEle">MonitorElement</a></li>
@@ -315,7 +315,7 @@ only time the timeStamp is changed.</p>
 
 <p>The following:</p>
 <pre>    String request =
-        "alarm,timeStamp,value{power.value[algortithm=deadband,isPercentage=true,deadband=1.0}";
+        "alarm,timeStamp,value{power.value[algortithm=deadband,isPercent=true,deadband=1.0}";
     PVStructure pvRequest = PVCopyFactory.createRequest(request);</pre>
 
 <p>This requests a monitor whenever and alarm is raised or when the

@@ -28,6 +28,7 @@ import org.epics.pvData.pv.ScalarType;
 import org.epics.pvData.pv.Status;
 import org.epics.pvData.pv.StatusCreate;
 import org.epics.pvData.pv.Type;
+import org.epics.pvData.pv.Status.StatusType;
 import org.epics.pvData.pvCopy.BitSetUtil;
 import org.epics.pvData.pvCopy.BitSetUtilFactory;
 import org.epics.pvData.pvCopy.PVCopy;
@@ -51,7 +52,10 @@ public class MonitorFactory {
 	public static Monitor create(PVRecord pvRecord,MonitorRequester monitorRequester,PVStructure pvRequest)
 	{
 		MonitorImpl monitor = new MonitorImpl(pvRecord,monitorRequester);
-		if(!monitor.init(pvRequest)) return null;
+		if(!monitor.init(pvRequest)) {
+			monitorRequester.monitorConnect(failedToCreateMonitorStatus, null, null);
+			return null;
+		}
 		return monitor;
 	}
 	
@@ -62,6 +66,7 @@ public class MonitorFactory {
 	}
 	private static final StatusCreate statusCreate = StatusFactory.getStatusCreate();
     private static final Status okStatus = statusCreate.getStatusOK();
+    private static final Status failedToCreateMonitorStatus = statusCreate.createStatus(StatusType.FATAL, "failed to create monitor", null);
 	private static final PVDataCreate pvDataCreate = PVDataFactory.getPVDataCreate();
 	private static final ArrayList<MonitorAlgorithmCreate> monitorAlgorithmCreateList = new ArrayList<MonitorAlgorithmCreate>();
 	private static final BitSetUtil bitSetUtil = BitSetUtilFactory.getCompressBitSet();
@@ -122,7 +127,7 @@ public class MonitorFactory {
 		private PVCopy pvCopy = null;
 		private QueueImpl queueImpl = null;
 		private PVCopyMonitor pvCopyMonitor;
-		private final ArrayList<MonitorFieldNode> monitorFieldList = new ArrayList<MonitorFieldNode>();
+		private final ArrayList<MonitorFieldNode> monitorFieldList = new ArrayList<MonitorFieldNode>(3);
 		
         private volatile boolean firstMonitor = false;
         private volatile boolean gotMonitor = false;
@@ -203,6 +208,7 @@ public class MonitorFactory {
 				while(nextBit>=0) {
 					if(changedBitSet.get(nextBit)) {
 						gotMonitor = true;
+						break;
 					}
 					nextBit = notMonitoredBitSet.nextSetBit(nextBit+1);
 				}
@@ -304,8 +310,9 @@ public class MonitorFactory {
 				PVStructure pvStruct = (PVStructure)pvField;
 				PVField pv = pvStruct.getSubField("leaf");
 				if(pv!=null) {
-					if(pvStruct.getSubField("algorithm")==null) continue;
-					PVString pvFullName = pvStruct.getStringField("leaf");
+					PVStructure pvLeaf = (PVStructure)pv;
+					if(pvLeaf.getSubField("algorithm")==null) continue;
+					PVString pvFullName = pvLeaf.getStringField("source");
 					PVField pvRecordField = pvRecord.getPVStructure().getSubField(pvFullName.get());
 					if(pvRecordField==null) return false;
 					String name = copyFullFieldName;
@@ -313,7 +320,7 @@ public class MonitorFactory {
 					name += pvRecordField.getField().getFieldName();
 					PVField pvCopyField = monitorElement.getPVStructure().getSubField(name);
 					boolean result = initMonitorField(
-							pvStruct,pvCopyField,pvRecordField,monitorElement);
+							pvLeaf,pvCopyField,pvRecordField,monitorElement);
 					if(!result) return false;
 					continue;
 				}
@@ -324,6 +331,7 @@ public class MonitorFactory {
 				boolean result = initField(pvStruct,name,monitorElement);
 				if(!result) return false;
 			}
+			monitorRequester.monitorConnect(okStatus,this, pvCopy.getStructure());
 			return true;
 		}
 		
@@ -345,10 +353,13 @@ public class MonitorFactory {
 				return false;
 			}
 			MonitorAlgorithm monitorAlgorithm = monitorAlgorithmCreate.create(pvRecord,monitorRequester,pvRecordField,pvMonitor);
+			if(monitorAlgorithm==null) return false;
 			int bitOffset = pvCopyField.getFieldOffset();
 			int numBits = pvCopyField.getNumberFields();
-			notMonitoredBitSet.set(bitOffset, bitOffset+numBits-1);
+			notMonitoredBitSet.set(bitOffset, bitOffset+numBits);
 			MonitorFieldNode node = new MonitorFieldNode(monitorAlgorithm,bitOffset);
+			node.monitorAlgorithm = monitorAlgorithm;
+			node.bitOffset = bitOffset;
 			monitorFieldList.add(node);
 			return true;
 		}

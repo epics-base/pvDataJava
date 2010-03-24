@@ -62,42 +62,38 @@ public class AlgorithmDeadbandFactory {
 			PVStructure pvParent = fromPVRecord.getParent();
 			PVField pvField = pvParent.getSubField("deadband");
 			if(pvField!=null && (pvField instanceof PVStructure)) pvRecordDeadband = (PVStructure)pvField;
-		    PVStructure pvCopyDeadband = null;
-			if(pvOptions!=null) {
-				pvField = pvOptions.getSubField("deadband");
-				if(pvField!=null && (pvField instanceof PVStructure)) pvCopyDeadband = (PVStructure)pvField;
-			}
-			if(pvRecordDeadband==null && pvCopyDeadband==null) return null;
-			boolean isDisplayDeadband= true;
-			double deadbandCopy = 0.0;
-			boolean isPercentCopy = false;
-			if(pvCopyDeadband!=null) {
-				pvField = pvCopyDeadband.getSubField("type");
-				if(pvField!=null && (pvField instanceof PVString)) {
-					PVString pvString = (PVString)pvField;
-					if(pvString.get().equals("archive")) isDisplayDeadband = false;
-				}
-				pvField = pvCopyDeadband.getSubField("isPercent");
-				if(pvField!=null && (pvField instanceof PVString)) {
-					PVString pvString = (PVString)pvField;
-					if(pvString.get().equals("true")) isPercentCopy = true;
-				}
-				pvField = pvCopyDeadband.getSubField("value");
-				if(pvField!=null && (pvField instanceof PVString)) {
-					PVString pvString = (PVString)pvField;
-					try {
-						deadbandCopy = Double.parseDouble(pvString.get());
-					} catch (NumberFormatException e) {
-						monitorRequester.message("deadband " + e.getMessage(), MessageType.error);
-						return null;
+			double optionsDeadband = 0.0;
+			boolean optionsIncludesPercent = false;
+			boolean optionsIsPercent = false;
+			boolean optionsTypeIsDisplay = true;
+			try {
+				if(pvOptions!=null) {
+					pvField = pvOptions.getSubField("deadband");
+					if(pvField!=null) {
+						PVString pvString = pvOptions.getStringField("deadband");
+						optionsDeadband = Double.valueOf(pvString.get());
+					}
+					pvField = pvOptions.getSubField("isPercent");
+					if(pvField!=null) {
+						optionsIncludesPercent = true;
+						PVString pvString = pvOptions.getStringField("isPercent");
+						optionsIsPercent = Boolean.valueOf(pvString.get());
+					}
+					pvField = pvOptions.getSubField("type");
+					if(pvField!=null) {
+						PVString pvString = pvOptions.getStringField("type");
+						if(pvString.get().equals("archive")) optionsTypeIsDisplay = false;
 					}
 				}
+			} catch (Exception e) {
+				monitorRequester.message("illegal options " + e.getMessage(), MessageType.error);
+				return null;
 			}
 			double deadbandRecord = 0.0;
 			boolean isPercentRecord = false;
 			if(pvRecordDeadband!=null) {
 				PVStructure pvStruct = null;
-				if(isDisplayDeadband) {
+				if(optionsTypeIsDisplay) {
 					pvField = pvRecordDeadband.getSubField("display");
 				} else {
 					pvField = pvRecordDeadband.getSubField("archive");
@@ -108,7 +104,9 @@ public class AlgorithmDeadbandFactory {
 					if(pvField!=null && (pvField instanceof PVBoolean)) {
 						PVBoolean pvBoolean = (PVBoolean)pvField;
 						isPercentRecord = pvBoolean.get();
+						
 					}
+					
 					pvField = pvStruct.getSubField("value");
 					if(pvField!=null && (pvField instanceof PVDouble)) {
 						PVDouble pvDouble = (PVDouble)pvField;
@@ -116,8 +114,15 @@ public class AlgorithmDeadbandFactory {
 					}
 				}
 			}
-			boolean isPercent = (pvCopyDeadband==null) ? isPercentRecord : isPercentCopy;
-			double deadband = (pvCopyDeadband==null) ? deadbandRecord : deadbandCopy;
+			double deadband = 0.0;
+			boolean isPercent = false;
+			if(optionsIncludesPercent && (optionsIsPercent!=isPercentRecord)) {
+				deadband = optionsDeadband;
+				isPercent = optionsIsPercent;
+			} else {
+				deadband = (optionsDeadband<deadbandRecord) ? deadbandRecord : optionsDeadband;
+				isPercent = isPercentRecord;
+			}
 			if(deadband<=0.0) return null;
 			return new MonitorAlgorithmImpl((PVScalar)fromPVRecord,deadband,isPercent);
 		}
