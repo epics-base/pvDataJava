@@ -139,13 +139,7 @@ public class BasePVStructure extends AbstractPVField implements PVStructure
             } 
         }
         pvFields[index] = newPVField;
-        if(origFields[index]!=newPVField.getField()) replaceStructure();
-        PVRecordField pvRecordField = super.getPVRecordField();
-        if(pvRecordField!=null) {
-            AbstractPVField pvField = (AbstractPVField)newPVField;
-            pvField.setRecord(pvRecordField.getPVRecord());
-        }
-        computeOffset();
+        updateInternal();
     }
     /* (non-Javadoc)
      * @see org.epics.pvData.pv.PVStructure#appendPVField(org.epics.pvData.pv.PVField)
@@ -159,13 +153,7 @@ public class BasePVStructure extends AbstractPVField implements PVStructure
         }
         newPVFields[newPVFields.length-1] = pvField;
         pvFields = newPVFields;
-        replaceStructure();
-        PVRecordField pvRecordField = super.getPVRecordField();
-        if(pvRecordField!=null) {
-            AbstractPVField abstractPVField = (AbstractPVField)pvField;
-            abstractPVField.setRecord(pvRecordField.getPVRecord());
-        }
-        computeOffset();
+        updateInternal();
     }
     /* (non-Javadoc)
      * @see org.epics.pvData.pv.PVStructure#removePVField(java.lang.String)
@@ -185,9 +173,25 @@ public class BasePVStructure extends AbstractPVField implements PVStructure
             newPVFields[newIndex++] = pvFields[i];
         }
         pvFields = newPVFields;
-        replaceStructure();
+        updateInternal();
     }
     /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#updateInternal()
+     */
+    @Override
+    public void updateInternal() {
+    	replaceStructure();
+    	PVRecordField pvRecordField = super.getPVRecordField();
+    	if(pvRecordField!=null) {
+    		for(PVField pvField : pvFields) {
+    			AbstractPVField abstractPVField = (AbstractPVField)pvField;
+    			abstractPVField.setRecord(pvRecordField.getPVRecord());
+    		}
+    	}
+    	computeOffset();
+    }
+
+	/* (non-Javadoc)
      * @see org.epics.pvData.pv.PVStructure#getPVFields()
      */
     @Override
