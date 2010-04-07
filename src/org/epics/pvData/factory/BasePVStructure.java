@@ -58,10 +58,14 @@ public class BasePVStructure extends AbstractPVField implements PVStructure
         constructorCommon(parent,structure);
     }
     
-    public BasePVStructure(PVRecord pvRecord, Structure structure) {
-    	super(null,structure);
-    	constructorCommon(null,structure);
-    	super.setRecord(pvRecord);
+//    public BasePVStructure(PVRecord pvRecord, Structure structure) {
+//    	super(null,structure);
+//    	constructorCommon(null,structure);
+//    	super.setRecord(pvRecord);
+//    }
+    
+    public void embedInRecord(PVRecord pvRecord) {
+    	setRecord(pvRecord);
     }
     
     private void constructorCommon(PVStructure parent,Structure structure)

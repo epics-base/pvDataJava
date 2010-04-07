@@ -10,7 +10,7 @@
 <body>
 <h1 style="text-align: center">EPICS PVData: pv<br />
 package: org.epics.pvData.pv<br />
-2010.04.01</h1>
+2010.04.07</h1>
 CONTENTS 
 
 <div class="toc">
@@ -914,12 +914,7 @@ interfaces. A factory is provided that creates PVDataCreate.</p>
         PVStructure structToClone);
     PVStructure createPVStructure(PVStructure parent,String fieldName,
         PVDatabase pvDatabase,String structureName);
-    PVRecord createPVRecord(String recordName,
-        Field[] fields);
-    PVRecord createPVRecord(String recordName,
-        PVStructure structToClone);
-    PVRecord createPVRecord(String recordName,
-        PVDatabase pvDatabase,String structureName);
+    PVRecord createPVRecord(String recordName,PVStructure pvStructure);
     PVField[] flattenPVStructure(PVStructure pvStructure);
 }</pre>
 where 
@@ -950,8 +945,8 @@ where
       structure is initialized to have 0 sub-fields. The last method clones
       the fields from a PVStructure obtained from a PVDatabase. </dd>
   <dt style="font-family: courier;">createPVRecord</dt>
-    <dd>Create a record instance. Like createPVStructure, three methods are
-      provided with semantics just like createPVStructure.</dd>
+    <dd>Create a record instance. pvStructure is the top level structure of
+      the record.</dd>
   <dt style="font-family: courier;">flattenPVStructure</dt>
     <dd>Create an array of PVFields for the fields in the PVStructure. The
       order is according to fieldOffset.</dd>

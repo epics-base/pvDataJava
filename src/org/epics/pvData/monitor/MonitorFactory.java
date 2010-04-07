@@ -5,12 +5,13 @@
  */
 package org.epics.pvData.monitor;
 
-import java.util.ArrayList;
-
 import org.epics.pvData.factory.ConvertFactory;
 import org.epics.pvData.factory.PVDataFactory;
 import org.epics.pvData.factory.StatusFactory;
 import org.epics.pvData.misc.BitSet;
+import org.epics.pvData.misc.LinkedList;
+import org.epics.pvData.misc.LinkedListCreate;
+import org.epics.pvData.misc.LinkedListNode;
 import org.epics.pvData.misc.ThreadPriority;
 import org.epics.pvData.misc.Timer;
 import org.epics.pvData.misc.TimerFactory;
@@ -61,14 +62,20 @@ public class MonitorFactory {
 	
 	public static void registerMonitorAlgorithmCreater(MonitorAlgorithmCreate monitorAlgorithmCreate) {
 		synchronized(monitorAlgorithmCreateList) {
-            monitorAlgorithmCreateList.add(monitorAlgorithmCreate);
+			if(monitorAlgorithmCreateList.contains(monitorAlgorithmCreate)) {
+				throw new IllegalStateException("already on list");
+			}
+			LinkedListNode<MonitorAlgorithmCreate> node = monitorAlgorithmCreateListCreate.createNode(monitorAlgorithmCreate);
+			monitorAlgorithmCreateList.addTail(node);
         }
 	}
+	private static final LinkedListCreate<MonitorAlgorithmCreate> monitorAlgorithmCreateListCreate = new LinkedListCreate<MonitorAlgorithmCreate>();
+	private static final LinkedListCreate<MonitorFieldNode> MonitorFieldNodeListCreate= new LinkedListCreate<MonitorFieldNode>();
 	private static final StatusCreate statusCreate = StatusFactory.getStatusCreate();
     private static final Status okStatus = statusCreate.getStatusOK();
     private static final Status failedToCreateMonitorStatus = statusCreate.createStatus(StatusType.FATAL, "failed to create monitor", null);
 	private static final PVDataCreate pvDataCreate = PVDataFactory.getPVDataCreate();
-	private static final ArrayList<MonitorAlgorithmCreate> monitorAlgorithmCreateList = new ArrayList<MonitorAlgorithmCreate>();
+	private static final LinkedList<MonitorAlgorithmCreate> monitorAlgorithmCreateList = monitorAlgorithmCreateListCreate.create();
 	private static final BitSetUtil bitSetUtil = BitSetUtilFactory.getCompressBitSet();
 	private static final Convert convert = ConvertFactory.getConvert();
 	private static final Timer timer = TimerFactory.create("periodicMonitor", ThreadPriority.high);
@@ -86,14 +93,16 @@ public class MonitorFactory {
 		PVBoolean pvCauseMonitor = (PVBoolean)pvDataCreate.createPVScalar(pvTimeStampRequest, "causeMonitor", ScalarType.pvBoolean);
 		pvCauseMonitor.put(false);
 		pvTimeStampRequest.appendPVField(pvCauseMonitor);
-		for(int i=0; i<monitorAlgorithmCreateList.size(); i++) {
-			MonitorAlgorithmCreate algorithmCreate = monitorAlgorithmCreateList.get(i);
+		LinkedListNode<MonitorAlgorithmCreate> node = monitorAlgorithmCreateList.getHead();
+		while(node!=null) {
+			MonitorAlgorithmCreate algorithmCreate = node.getObject();
 			if(algorithmCreate.getAlgorithmName().equals("onChange")) {
 				algorithmOnChangeCreate = algorithmCreate;
 			}
 			if(algorithmCreate.getAlgorithmName().equals("deadband")) {
 				algorithmDeadband = algorithmCreate;
 			}
+			node = monitorAlgorithmCreateList.getNext(node);
 		}
 	}
 	
@@ -127,7 +136,7 @@ public class MonitorFactory {
 		private PVCopy pvCopy = null;
 		private QueueImpl queueImpl = null;
 		private PVCopyMonitor pvCopyMonitor;
-		private final ArrayList<MonitorFieldNode> monitorFieldList = new ArrayList<MonitorFieldNode>(3);
+		private final LinkedList<MonitorFieldNode> monitorFieldList = MonitorFieldNodeListCreate.create();
 		
         private volatile boolean firstMonitor = false;
         private volatile boolean gotMonitor = false;
@@ -197,10 +206,12 @@ public class MonitorFactory {
 				return;
 			}
 			if(!gotMonitor) {
-				for(int i=0; i<monitorFieldList.size(); i++) {
-					MonitorFieldNode node = monitorFieldList.get(i);
+				LinkedListNode<MonitorFieldNode> listNode  = monitorFieldList.getHead();
+				while(listNode!=null) {
+					MonitorFieldNode node = listNode.getObject();
 					boolean result = node.monitorAlgorithm.causeMonitor();
 					if(result) gotMonitor = true;
+					listNode = monitorFieldList.getNext(listNode);
 				}
 			}
 			if(!gotMonitor) {
@@ -216,9 +227,11 @@ public class MonitorFactory {
 			if(!gotMonitor) return;
 			if(queueImpl.dataChanged()) {
 				monitorRequester.monitorEvent(this);
-				for(int i=0; i<monitorFieldList.size(); i++) {
-					MonitorFieldNode node = monitorFieldList.get(i);
-					node.monitorAlgorithm.monitorIssued();
+				LinkedListNode<MonitorFieldNode> listNode  = monitorFieldList.getHead();
+				while(listNode!=null) {
+					MonitorFieldNode node = listNode.getObject();
+				    node.monitorAlgorithm.monitorIssued();
+					listNode = monitorFieldList.getNext(listNode);
 				}
 				gotMonitor = false;
 			}
@@ -344,9 +357,11 @@ public class MonitorFactory {
 			String algorithm = pvAlgorithm.get();
 			if(algorithm.equals("onPut")) return true;
 			MonitorAlgorithmCreate monitorAlgorithmCreate = null;
-			for(int i=0; i<monitorAlgorithmCreateList.size(); i++) {
-				monitorAlgorithmCreate = monitorAlgorithmCreateList.get(i);
+			LinkedListNode<MonitorAlgorithmCreate> listNode = monitorAlgorithmCreateList.getHead();
+			while(listNode!=null) {
+				monitorAlgorithmCreate = listNode.getObject();
 				if(monitorAlgorithmCreate.getAlgorithmName().equals(algorithm)) break;
+				listNode = monitorAlgorithmCreateList.getNext(listNode);
 			}
 			if(monitorAlgorithmCreate==null) {
 				monitorRequester.message("algorithm not registered", MessageType.error);
@@ -360,7 +375,8 @@ public class MonitorFactory {
 			MonitorFieldNode node = new MonitorFieldNode(monitorAlgorithm,bitOffset);
 			node.monitorAlgorithm = monitorAlgorithm;
 			node.bitOffset = bitOffset;
-			monitorFieldList.add(node);
+			LinkedListNode<MonitorFieldNode> listNode1 = MonitorFieldNodeListCreate.createNode(node);
+			monitorFieldList.addTail(listNode1);
 			return true;
 		}
 		
@@ -369,14 +385,16 @@ public class MonitorFactory {
 			if(pvField==null) return;
 			int bitOffset = pvCopy.getCopyOffset(pvField);
 			if(bitOffset<0) return;
-			for(int i=0; i<monitorFieldList.size(); i++) {
-				MonitorFieldNode monitorFieldNode = monitorFieldList.get(i);
+			LinkedListNode<MonitorFieldNode> listNode = monitorFieldList.getHead();
+			while(listNode!=null) {
+				MonitorFieldNode monitorFieldNode = listNode.getObject();
 				if(monitorFieldNode.bitOffset==bitOffset) return;
-
+				listNode = monitorFieldList.getNext(listNode);
 			}
 			MonitorAlgorithm monitorAlgorithm = algorithmOnChangeCreate.create(pvRecord,monitorRequester,pvField,pvTimeStampRequest);
 			MonitorFieldNode node = new MonitorFieldNode(monitorAlgorithm,bitOffset);
-			monitorFieldList.add(node);
+			listNode = MonitorFieldNodeListCreate.createNode(node);
+			monitorFieldList.addTail(listNode);
 			PVField pvCopyField = monitorElement.getPVStructure().getSubField("timeStamp");
 			int numBits = pvCopyField.getNumberFields();
 			notMonitoredBitSet.set(bitOffset, bitOffset+numBits);
@@ -395,9 +413,11 @@ public class MonitorFactory {
 					Scalar scalar = (Scalar)field;
 					if(scalar.getScalarType().isNumeric()) {
 						int bitOffset = pvField.getFieldOffset();
-						for(int j=0; j<monitorFieldList.size(); j++) {
-							MonitorFieldNode monitorFieldNode = monitorFieldList.get(j);
+						LinkedListNode<MonitorFieldNode> listNode = monitorFieldList.getHead();
+						while(listNode!=null) {
+							MonitorFieldNode monitorFieldNode = listNode.getObject();
 							if(monitorFieldNode.bitOffset==bitOffset) continue outer; // already monitored
+							listNode = monitorFieldList.getNext(listNode);
 						}
 						PVField pvRecordField = pvCopy.getRecordPVField(bitOffset);
 						MonitorAlgorithm monitorAlgorithm = algorithmDeadband.create(pvRecord,monitorRequester,pvRecordField,null);
@@ -405,7 +425,8 @@ public class MonitorFactory {
 							int numBits = pvField.getNumberFields();
 							notMonitoredBitSet.set(bitOffset, bitOffset+numBits);
 						    MonitorFieldNode node = new MonitorFieldNode(monitorAlgorithm,bitOffset);
-						    monitorFieldList.add(node);
+						    listNode = MonitorFieldNodeListCreate.createNode(node);
+							monitorFieldList.addTail(listNode);
 						}
 					}
 				}
@@ -473,14 +494,12 @@ public class MonitorFactory {
 		}
 		
 		private class Queue implements QueueImpl {
-			private MonitorImpl monitorImpl;
 			private MonitorQueue monitorQueue = null;
 			private MonitorElement monitorElement = null;
 			private volatile boolean queueIsFull = false;
 			
 			@Override
 			public MonitorElement init(MonitorImpl monitorImpl,int queueSize) {
-				this.monitorImpl = monitorImpl;
 				MonitorElement[] elements = new MonitorElement[queueSize];
 				for(int i=0; i<elements.length;i++) elements[i] = MonitorQueueFactory.createMonitorElement(pvCopy.createPVStructure());
 				monitorQueue = MonitorQueueFactory.create(elements);
