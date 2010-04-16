@@ -3,7 +3,6 @@
  */
 package org.epics.pvData.property;
 import org.epics.pvData.misc.Enumerated;
-import org.epics.pvData.pv.PVBoolean;
 import org.epics.pvData.pv.PVField;
 import org.epics.pvData.pv.PVInt;
 import org.epics.pvData.pv.PVString;

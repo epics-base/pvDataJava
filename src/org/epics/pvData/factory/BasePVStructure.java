@@ -29,10 +29,14 @@ import org.epics.pvData.pv.PVRecordField;
 import org.epics.pvData.pv.PVShort;
 import org.epics.pvData.pv.PVString;
 import org.epics.pvData.pv.PVStructure;
+import org.epics.pvData.pv.PVStructureArray;
+import org.epics.pvData.pv.PVStructureScalar;
 import org.epics.pvData.pv.Scalar;
 import org.epics.pvData.pv.ScalarType;
 import org.epics.pvData.pv.SerializableControl;
 import org.epics.pvData.pv.Structure;
+import org.epics.pvData.pv.StructureArray;
+import org.epics.pvData.pv.StructureScalar;
 import org.epics.pvData.pv.Type;
 
 /**
@@ -57,14 +61,14 @@ public class BasePVStructure extends AbstractPVField implements PVStructure
         super(parent,structure);
         constructorCommon(parent,structure);
     }
-    
-//    public BasePVStructure(PVRecord pvRecord, Structure structure) {
-//    	super(null,structure);
-//    	constructorCommon(null,structure);
-//    	super.setRecord(pvRecord);
-//    }
-    
+    /**
+     * Embed this PVStructure in a PVRecord.
+     * @param pvRecord
+     */
     public void embedInRecord(PVRecord pvRecord) {
+    	if(super.getParent()!=null) {
+    		throw new IllegalStateException("can only embed a top level strucure");
+    	}
     	setRecord(pvRecord);
     }
     
@@ -77,12 +81,21 @@ public class BasePVStructure extends AbstractPVField implements PVStructure
         	switch(field.getType()) {
         	case scalar: {
         		Scalar scalar = (Scalar)field;
-        		pvFields[i] = pvDataCreate.createPVScalar(this,field.getFieldName(),scalar.getScalarType());
+        		if(scalar.getScalarType()==ScalarType.pvStructure) {
+                    pvFields[i] = pvDataCreate.createPVStructureScalar(this,(StructureScalar)scalar);
+        		} else {
+        			pvFields[i] = pvDataCreate.createPVScalar(this,field.getFieldName(),scalar.getScalarType());
+        		}
         		break;
         	}
         	case scalarArray: {
         		Array array = (Array)field;
-        		pvFields[i] = pvDataCreate.createPVArray(this,field.getFieldName(),array.getElementType());
+        		ScalarType elementType = array.getElementType();
+        		if(elementType==ScalarType.pvStructure) {
+        			pvFields[i] = pvDataCreate.createPVStructureArray(this, ((StructureArray)array));
+        		} else {
+        		    pvFields[i] = pvDataCreate.createPVArray(this,field.getFieldName(),elementType);
+        		}
         		break;
         	}
         	case structure: {
@@ -364,6 +377,28 @@ public class BasePVStructure extends AbstractPVField implements PVStructure
         return null;
     }
     /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getStructureScalarField(java.lang.String)
+     */
+    @Override
+	public PVStructureScalar getStructureScalarField(String fieldName) {
+    	PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+            super.message("fieldName " + fieldName + " does not exist ",
+                    MessageType.error);
+            return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvStructure) {
+                return (PVStructureScalar)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type structurte ",
+                MessageType.error);
+        return null;
+	}
+
+	/* (non-Javadoc)
      * @see org.epics.pvData.pv.PVStructure#getStructureField(java.lang.String)
      */
     @Override
@@ -412,6 +447,35 @@ public class BasePVStructure extends AbstractPVField implements PVStructure
         return (PVArray)pvField;
     }
     /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getStructureArrayField(java.lang.String)
+     */
+    @Override
+	public PVStructureArray getStructureArrayField(String fieldName) {
+    	PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        Field field = pvField.getField();
+        Type type = field.getType();
+        if(type!=Type.scalarArray) {
+            super.message(
+                "fieldName " + fieldName + " does not have type array ",
+                MessageType.error);
+            return null;
+        }
+        Array array = (Array)field;
+        if(array.getElementType()!=ScalarType.pvStructure) {
+            super.message(
+                    "fieldName "
+                    + fieldName + " is array but does not have elementType structure ",
+                    MessageType.error);
+                return null;
+        }
+        return (PVStructureArray)pvField;
+	}
+
+	/* (non-Javadoc)
      * @see org.epics.pvData.pv.PVStructure#getExtendStructure()
      */
     public String getExtendsStructureName() {

@@ -15,7 +15,6 @@ import org.epics.pvData.pv.PVListener;
 import org.epics.pvData.pv.PVRecord;
 import org.epics.pvData.pv.PVStructure;
 import org.epics.pvData.pv.Requester;
-import org.epics.pvData.pv.Structure;
 
 
 
@@ -180,7 +179,7 @@ public class BasePVRecord implements PVRecord {
         return false;
     }
     /* (non-Javadoc)
-     * @see org.epics.pvData.factory.AbstractPVField#removeEveryListener()
+     * @see org.epics.pvData.pv.PVRecord#removeEveryListener()
      */
     public void removeEveryListener() {
     	

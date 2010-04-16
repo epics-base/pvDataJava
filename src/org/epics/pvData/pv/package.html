@@ -10,20 +10,20 @@
 <body>
 <h1 style="text-align: center">EPICS PVData: pv<br />
 package: org.epics.pvData.pv<br />
-2010.04.07</h1>
+2010.04.15</h1>
 CONTENTS 
 
 <div class="toc">
 <ul>
   <li><a href="#Overview">Overview</a></li>
-  <li><a href="#Process">Process Variable Reflection</a> 
+  <li><a href="#Process">Process Variable Reflection</a>
     <ul>
       <li><a href="#Type">Type</a></li>
       <li><a href="#Reflection">Reflection</a></li>
     </ul>
   </li>
   <li><a href="#Status">Status</a></li>
-  <li><a href="#PVField">PVField - Data Interfaces</a> 
+  <li><a href="#PVField">PVField - Data Interfaces</a>
     <ul>
       <li><a href="#PVField1">PVField</a></li>
       <li><a href="#PVRecordFi">PVRecordField</a></li>
@@ -33,15 +33,16 @@ CONTENTS
       <li><a href="#PVScalar">PVScalar and extensions</a></li>
       <li><a href="#Primitive">Primitive PVField types</a></li>
       <li><a href="#PVString">PVString</a></li>
-      <li><a href="#PVArray">PVArray and Extensions</a> 
+      <li><a href="#PVStructur">PVStructureScalar</a></li>
+      <li><a href="#PVArray">PVArray and Extensions</a>
         <ul>
           <li><a href="#PVArray1">PVArray</a></li>
           <li><a href="#PVArray2">PVArray Extensions</a></li>
           <li><a href="#Complete">Complete set of PVArray Extensions</a></li>
         </ul>
       </li>
-      <li><a href="#PVStructur">PVStructure</a></li>
-      <li><a href="#PVRecord">PVRecord</a> 
+      <li><a href="#PVStructur1">PVStructure</a></li>
+      <li><a href="#PVRecord">PVRecord</a>
         <ul>
           <li><a href="#Record">Record Locking</a></li>
         </ul>
@@ -51,7 +52,7 @@ CONTENTS
     </ul>
   </li>
   <li><a href="#Convert">Convert</a></li>
-  <li><a href="#Examples">Examples</a> 
+  <li><a href="#Examples">Examples</a>
     <ul>
       <li><a href="#Accessing">Accessing PVData</a></li>
       <li><a href="#Creating">Creating PVData</a></li>
@@ -151,7 +152,8 @@ over the network.</p>
         pvBoolean,
         pvByte, pvShort, pvInt, pvLong,
         pvFloat,pvDouble,
-        pvString;
+        pvString,
+        pvStructure;
 
         //Convenience methods
         public boolean isInteger();   // pvByte,...,pvLong
@@ -180,6 +182,10 @@ over the network.</p>
     interface Scalar extends Field {
         ScalarType getScalarType();
     }
+ 
+    interface StructureScalar extends Scalar{
+        Structure getStructure();
+    }
 
     interface Array extends Field{
         ScalarType getElementType();
@@ -192,18 +198,25 @@ over the network.</p>
         Field[] getFields();
     }
 
+
+    interface StructureArray extends Array{
+        Structure getStructure();
+    }
+
     interface FieldCreate {
         Field create(String fieldName,Field field);
         Scalar createScalar(String fieldName,ScalarType scalarType);
+        StructureScalar createStructureScalar(String fieldName,Field[] fields);
         Array createArray(String fieldName,ScalarType elementType);
+        StructureScalar createStructureScalar(String fieldName,Field[] fields);
         Structure createStructure(String fieldName, Field[] field);
     }</pre>
 
 <p>The above definitions support the following:</p>
 <dl>
   <dt>Serializable</dt>
-    <dd>A Field can be serialized. This is requied for implementing Channel
-      Access.</dd>
+    <dd>A Field can be serialized. This is required for implementing
+    pvAccess.</dd>
   <dt>Field</dt>
     <dd>A field: 
       <dl>
@@ -214,8 +227,15 @@ over the network.</p>
     </dd>
   <dt>Scalar</dt>
     <dd>A scalar has a scalarType</dd>
+  <dt>StructureScalar</dt>
+    <dd>The field holds a top level structure. A client can only get/put the
+      entire structure NOT subfields of the structure. </dd>
   <dt>Array</dt>
     <dd>The element type is a scalarType</dd>
+  <dt>StructureArray</dt>
+    <dd>The field holds PVStructure[]. Each element has the same Structure
+      interspection interface. A client can only get/put entire PVStructure
+      elements NOT subfields of array elements.</dd>
   <dt>Structure</dt>
     <dd>Has fields that can be any of the supported types.</dd>
   <dt>FieldCreate</dt>
@@ -450,7 +470,9 @@ auxInfos. An auxInfo is a (key,PVScalar) pair where key is a string.</p>
 <p>A PVlistener can attach itself to any field or fields of a record. It will
 be notified whenever a put is issued to the field, i.e. the field is
 modified. If the field is a structure then the PVListener is notified
-whenever that field or any subfield is modified.</p>
+whenever that field or any subfield is modified. Please note that
+PVStructureScalar and PVStructureArray fields are treated as leaf fields so
+that the underlying fields can not have attached listeners.</p>
 <pre>    public interface PVListener {
         void dataPut(PVField pvField);
         void dataPut(PVStructure requested,PVField pvField);
@@ -526,6 +548,27 @@ whenever that field or any subfield is modified.</p>
         String get();
         void put(String value);
     }</pre>
+
+<h3 id="PVStructur">PVStructureScalar</h3>
+
+<p>The interface for a structure scalars:</p>
+<pre>    interface PVStructureScalar extends PVScalar{
+        StructureScalar getStructureScalar();
+        PVStructure getPVStructure();
+        void put();
+    }</pre>
+
+<p>A<span style="font-family: courier">PVStructureScalar</span> is treated as
+a single field. The method PVStructureScalar.getNumberFields() returns 1, i.
+e. the field is a leaf. The methods are:</p>
+<dl>
+  <dt>getStructureScalar</dt>
+    <dd>A client can only access the the underlying PVStructure via the
+      structure returned by getPVStructure. It is not possible to attach
+      listeners to the underlying PVStructure.</dd>
+  <dt>put</dt>
+    <dd>If a client modifies the stricture than this must be called. </dd>
+</dl>
 
 <h3 id="PVArray">PVArray and Extensions</h3>
 
@@ -721,9 +764,26 @@ to coordinate access to the array.</p>
         int get(int offset, int len, StringArrayData data);
         int put(int offset, int len, String[]from, int fromOffset);
         void shareData(String[] from);
+    }
+
+    public class StructureArrayData {
+        public PVStructure[] data;
+        public int offset;
+    }
+
+    interface PVStructureArray extends PVArray {
+        StructureArray getStructureArray();
+        int get(int offset, int length, StructureArrayData data);
+        int put(int offset,int length, PVStructure[] from, int fromOffset);
+        void shareData(PVStructure[] from);
     }</pre>
 
-<h3 id="PVStructur">PVStructure</h3>
+<p>Notes about PVStructureArray: A client can only access the data in the
+elements of the array via the get and put methods, i.e. it is not possible to
+access subfields indirectly. PVStructureArray.getNumberFields() returns 1,
+i.e. the field looks like a leaf field.</p>
+
+<h3 id="PVStructur1">PVStructure</h3>
 
 <p>The interface for a structure is:</p>
 <pre>    interface PVStructure extends PVField {
@@ -744,8 +804,12 @@ to coordinate access to the array.</p>
         PVFloat getFloatField(String fieldName);
         PVDouble getDoubleField(String fieldName);
         PVString getStringField(String fieldName);
+        PVStructureScalar getStructureScalarField(String fieldName);
         PVStructure getStructureField(String fieldName,String structureName);
         PVArray getArrayField(String fieldName,Type elementType);
+        StructureScalar createStructureScalar(String fieldName,Field[] fields);
+        String getExtendsStructureName();
+        boolean putExtendsStructureName(String extendsStructureName);
     }</pre>
 
 <p>where</p>
@@ -808,7 +872,10 @@ to coordinate access to the array.</p>
   <dt>getStringField</dt>
     <dd>Look for fieldName. If found and it has the correct type return the
       interface.</dd>
-  <dt>getStructureField</dt>
+  <dt>getStructureScalarField</dt>
+    <dd>Look for fieldName. If found and it has the correct type return the
+      interface.</dd>
+  <dt>getStringField</dt>
     <dd>Look for fieldName. If found and it has the correct type return the
       interface.</dd>
   <dt>getArrayField</dt>
@@ -903,9 +970,12 @@ interfaces. A factory is provided that creates PVDataCreate.</p>
     PVScalar createPVScalar(PVStructure parent,Scalar scalar);
     PVScalar createPVScalar(PVStructure parent,String fieldName,ScalarType fieldType);
     PVScalar createPVScalar(PVStructure parent,String fieldName,PVScalar scalarToClone);
+    PVStructureScalar createPVStructureScalar(PVStructure parent,StructureScalar structureScalar);
+    PVStructureScalar createPVStructureScalar(PVStructure parent,String fieldName,PVStructure structureToClone);
     PVArray createPVArray(PVStructure parent,Array array);
     PVArray createPVArray(PVStructure parent,String fieldName,ScalarType elementType);
     PVArray createPVArray(PVStructure parent,String fieldName,PVArray arrayToClone);
+    PVStructureArray createPVStructureArray(PVStructure parent,StructureArray structureArray);
     PVStructure createPVStructure(PVStructure parent,
         Structure structure);
     PVStructure createPVStructure(PVStructure parent,String fieldName,
@@ -929,12 +999,22 @@ where
       field name and the scalarType. The last provides a field name and a
       PVScalar to clone. The newly created PVScalar will have the same
       auxInfos as the original.</dd>
+  <dt style="font-family: courier;">createPVStructureScalar</dt>
+    <dd>Creates an instance of a PVStructureScalar. Two versions are
+      provided. The first is passed a structureScalar interface. The other
+      provides a PVStructure from which a structureScalar is created. This
+      second form also copies the data after the internal PVStructure is
+      created.</dd>
   <dt style="font-family: courier;">createPVArray</dt>
     <dd>Create an instance of a PVArray. Three versions are supplied. The
       first is passed an introspection interface. The second provides the
       field name and the elementType. The last provides a field name and a
       PVArray to clone. The newly created PVArray will have the same auxInfos
       as the original.</dd>
+  <dt style="font-family: courier;">createPVStructureArray</dt>
+    <dd>Create a PVStructureArray. It must be passed a structureToClone. This
+      will become the Structure interface for ALL elements of the
+      PVStructureArray. It MUST be used to create any new array elements.</dd>
   <dt style="font-family: courier;">createPVStructure</dt>
     <dd>Create an instance of a PVStructure. Four methods are provided. The
       first method uses a previously created structure introspection
@@ -1002,18 +1082,22 @@ in structure "structName". </p>
     <dd>Find a record. Null is returned if the record is not in the
     database.</dd>
   <dt>addRecord</dt>
-    <dd>Add a record to the database.</dd>
+    <dd>Add a record to the database. If the record already exists it is not
+      modified and false is returned.</dd>
   <dt>removeRecord</dt>
-    <dd>Remove a record from the database.</dd>
+    <dd>Remove a record from the database. If the record was not in the
+      database false is returned.</dd>
   <dt>getRecords</dt>
     <dd>Get a array of all the records.</dd>
   <dt>findStructure</dt>
     <dd>Find a structure. Null is returned if the structure is not in the
       database.</dd>
   <dt>addStructure</dt>
-    <dd>Add a structure to the database.</dd>
+    <dd>Add a structure to the database. If it already exists false is
+      returned.</dd>
   <dt>removeStructure</dt>
-    <dd>Remove a structure from the database.</dd>
+    <dd>Remove a structure from the database. If it did not exist false is
+      returned.</dd>
   <dt>getStructures</dt>
     <dd>Get a array of all the structures.</dd>
   <dt>message</dt>

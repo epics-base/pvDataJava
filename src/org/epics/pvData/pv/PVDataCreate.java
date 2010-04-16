@@ -51,6 +51,21 @@ public interface PVDataCreate {
      */
     PVScalar createPVScalar(PVStructure parent,String fieldName,PVScalar scalarToClone);
     /**
+     * Create an implementation of a scalar field which is a PVStructure.
+     * @param parent The parent.
+     * @param structureScalar The introspection interface.
+     * @return The PVStructureScalar implementation.
+     */
+    PVStructureScalar createPVStructureScalar(PVStructure parent,StructureScalar structureScalar);
+    /**
+     * Create an implementation of a scalar field which is a PVStructure.
+     * @param parent The parent.
+     * @param fieldName The field name.
+     * @param structureToClone The structure to clone.
+     * @return The PVStructureScalar implementation.
+     */
+    PVStructureScalar createPVStructureScalar(PVStructure parent,String fieldName,PVStructure structureToClone);
+    /**
      * Create an implementation of an array field reusing the Array introspection interface.
      * @param parent The parent interface.
      * @param array The introspection interface.
@@ -74,6 +89,14 @@ public interface PVDataCreate {
      * @return The PVArray implementation.
      */
     PVArray createPVArray(PVStructure parent,String fieldName,PVArray arrayToClone);
+    /**
+     * Create an implementation of an array with structure elements.
+     * @param parent The parent interface.
+     * @param structureArray The introspection interface.
+     * All elements share the same introspection interface.
+     * @return The PVStructureArray implementation.
+     */
+    PVStructureArray createPVStructureArray(PVStructure parent,StructureArray structureArray);
     /**
      * Create implementation for PVStructure.
      * @param parent The parent interface.
