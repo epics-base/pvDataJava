@@ -633,13 +633,15 @@ public class XMLToPVDatabaseFactory {
         {
         	String fieldName = attributes.get("name");
         	if(fieldName==null || fieldName.length() == 0) {
-                iocxmlReader.message("name not defined",MessageType.error);
-                return;
-            }
+        		iocxmlReader.message("name not defined",MessageType.error);
+        		return;
+        	}
         	PVStructure pvParent = structureState.pvStructure;
         	PVField pvField = pvParent.getSubField(fieldName);
         	ScalarType scalarType = null;
-        	if(!structureState.isEnumerated) {
+        	if(structureState.isEnumerated && fieldName.equals("choice")) {
+        		structureState.isChoice = true;
+        	} else {
         		if(pvField!=null) {
         			Field field = pvField.getField();
         			if(field.getType()!=Type.scalar) {
@@ -659,27 +661,27 @@ public class XMLToPVDatabaseFactory {
         			startStructureScalar(fieldName,attributes);
         			return;
         		}
-        	}
-        	String immutableString = attributes.get("immutable");
-        	if(immutableString!=null && immutableString.equals("true")) {
-        		immutable = true;
-        	} else {
-        		immutable = false;
-        	}
-        	scalarString = null;
-        	if(structureState.isEnumerated && fieldName.equals("choice")) {
-        		structureState.isChoice = true;
-        	} else {
-        		structureState.isChoice = false;
-        		PVScalar pvScalar = null;
-        		if(pvField!=null) {
-        			pvScalar = (PVScalar)pvField;
+        		String immutableString = attributes.get("immutable");
+        		if(immutableString!=null && immutableString.equals("true")) {
+        			immutable = true;
         		} else {
-        			pvScalar= pvDataCreate.createPVScalar(pvParent, fieldName,scalarType);
-        			pvParent.appendPVField(pvScalar);
+        			immutable = false;
         		}
-        		this.pvScalar = pvScalar;
-        		if(pvListener!=null) pvListener.startScalar(pvScalar);
+        		scalarString = null;
+        		if(structureState.isEnumerated && fieldName.equals("choice")) {
+        			structureState.isChoice = true;
+        		} else {
+        			structureState.isChoice = false;
+        			PVScalar pvScalar = null;
+        			if(pvField!=null) {
+        				pvScalar = (PVScalar)pvField;
+        			} else {
+        				pvScalar= pvDataCreate.createPVScalar(pvParent, fieldName,scalarType);
+        				pvParent.appendPVField(pvScalar);
+        			}
+        			this.pvScalar = pvScalar;
+        			if(pvListener!=null) pvListener.startScalar(pvScalar);
+        		}
         	}
         	scalarPrevState = state;
         	state = State.scalar;
@@ -915,7 +917,7 @@ public class XMLToPVDatabaseFactory {
         					MessageType.error);
         			return;
         		}
-        		StructureArray structureArray = fieldCreate.createStructureArray(fieldName, pvStructure.getStructure().getFields());
+        		StructureArray structureArray = fieldCreate.createStructureArray(fieldName, pvStructure.getStructure());
         		pvStructureArray = pvDataCreate.createPVStructureArray(pvParent, structureArray);
         		pvParent.appendPVField(pvStructureArray);
         		String capacity = attributes.get("capacity");

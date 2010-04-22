@@ -5,35 +5,39 @@
  */
 package org.epics.pvData.factory;
 
+import org.epics.pvData.pv.Scalar;
 import org.epics.pvData.pv.ScalarType;
-import org.epics.pvData.pv.Structure;
-import org.epics.pvData.pv.StructureScalar;
+import org.epics.pvData.pv.Type;
 
 /**
- * Base class for implementing a StructureScalar.
+ * Base class for implementing a Scalar.
  * It is also a complete implementation.
  * @author mrk
  *
  */
-public class BaseStructureScalar extends BaseScalar implements StructureScalar {
-    private Structure structure;
+public class BaseScalar extends BaseField implements Scalar {
+    
+    private ScalarType scalarType;
+    
     /**
-     * Constructor for BaseStructureScalar.
+     * Constructor for BaseScalar.
      * @param fieldName The field name.
-     * @param structure The introspection interface for the fields of the structure.
+     * @param scalarType The scalar Type.
      */
-    public BaseStructureScalar(String fieldName,Structure structure) {
-        super(fieldName, ScalarType.pvStructure);
-        this.structure = structure;
+    public BaseScalar(String fieldName,ScalarType scalarType) {
+        super(fieldName, Type.scalar);
+        this.scalarType = scalarType;
+        if(scalarType==null) {
+        	throw new NullPointerException("scalarType is null");
+        }
     }
     /* (non-Javadoc)
-     * @see org.epics.pvData.pv.StructureScalar#getStructure()
+     * @see org.epics.pvData.pv.Scalar#getScalarType()
      */
-    @Override
-	public Structure getStructure() {
-		return structure;
-	}
-	/* (non-Javadoc)
+    public ScalarType getScalarType() {
+        return scalarType;
+    }
+    /* (non-Javadoc)
      * @see org.epics.pvData.factory.BaseField#toString()
      */
     public String toString() { return getString(0);}
@@ -47,7 +51,7 @@ public class BaseStructureScalar extends BaseScalar implements StructureScalar {
     private String getString(int indentLevel) {
         StringBuilder builder = new StringBuilder();
         builder.append(super.toString(indentLevel));
-        builder.append(" structure " + structure.toString());
+        builder.append(" scalarType " + scalarType.toString());
         return builder.toString();
     }
 	/* (non-Javadoc)
@@ -57,7 +61,7 @@ public class BaseStructureScalar extends BaseScalar implements StructureScalar {
 	public int hashCode() {
 		final int PRIME = 31;
 		int result = super.hashCode();
-		result = PRIME * result + ((structure == null) ? 0 : structure.hashCode());
+		result = PRIME * result + ((scalarType == null) ? 0 : scalarType.hashCode());
 		return result;
 	}
 	/* (non-Javadoc)
@@ -71,11 +75,11 @@ public class BaseStructureScalar extends BaseScalar implements StructureScalar {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		final BaseStructureScalar other = (BaseStructureScalar) obj;
-		if (structure == null) {
-			if (other.structure != null)
+		final BaseScalar other = (BaseScalar) obj;
+		if (scalarType == null) {
+			if (other.scalarType != null)
 				return false;
-		} else if (!structure.equals(other.structure))
+		} else if (!scalarType.equals(other.scalarType))
 			return false;
 		return true;
 	}

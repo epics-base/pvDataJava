@@ -38,6 +38,19 @@ import org.epics.pvData.xml.XMLToPVDatabaseFactory;
  */
 public class MonitorTest extends TestCase {
     private static PVDatabase master = PVDatabaseFactory.getMaster();
+    private static final Requester requester = new RequesterImpl();
+    
+    private static class RequesterImpl implements Requester {
+		@Override
+		public String getRequesterName() {
+			return "pvCopyTest";
+		}
+		@Override
+		public void message(String message, MessageType messageType) {
+		    System.out.printf("message %s messageType %s%n",message,messageType.name());
+			
+		}
+    }
     
     public static void testPVCopy() {
      // get database for testing
@@ -62,7 +75,7 @@ public class MonitorTest extends TestCase {
         PVInt pvRecordNanoSeconds = (PVInt)pvStructure.getSubField("timeStamp.nanoSeconds");
         PVDouble pvRecordPowerValue = (PVDouble)pvStructure.getSubField("power.value");
         String request = "record[queueSize=1]field(alarm,timeStamp[algorithm=onChange,causeMonitor=true],power.value)";
-        PVStructure pvRequest = PVCopyFactory.createRequest(request);
+        PVStructure pvRequest = PVCopyFactory.createRequest(request,requester);
 //System.out.println("request:" + request);
 //System.out.println("pvRequest:" + pvRequest);
         MonitorRequesterImpl monitorRequester = new  MonitorRequesterImpl(pvRecord,pvRequest);
@@ -114,7 +127,7 @@ public class MonitorTest extends TestCase {
         PVDouble pvRecordPowerValue = (PVDouble)pvStructure.getSubField("power.value");
         String request = "record[queueSize=1]field(alarm,timeStamp,power.value)";
 //System.out.println("pvRecord " + pvRecord);
-        PVStructure pvRequest = PVCopyFactory.createRequest(request);
+        PVStructure pvRequest = PVCopyFactory.createRequest(request,requester);
 //System.out.println("request:" + request);
 //System.out.println("pvRequest:" + pvRequest);
         MonitorRequesterImpl monitorRequester = new  MonitorRequesterImpl(pvRecord,pvRequest);
@@ -187,7 +200,7 @@ public class MonitorTest extends TestCase {
         PVDouble pvRecordPowerValue = (PVDouble)pvStructure.getSubField("power.value");
         String request = "alarm,timeStamp,power.value";
 //System.out.println("pvRecord " + pvRecord);
-        PVStructure pvRequest = PVCopyFactory.createRequest(request);
+        PVStructure pvRequest = PVCopyFactory.createRequest(request,requester);
 //System.out.println("request:" + request);
 //System.out.println("pvRequest:" + pvRequest);
         MonitorRequesterImpl monitorRequester = new  MonitorRequesterImpl(pvRecord,pvRequest);
@@ -273,7 +286,7 @@ public class MonitorTest extends TestCase {
         PVDouble pvRecordPowerValue = (PVDouble)pvStructure.getSubField("power.value");
         String request = "alarm,timeStamp,power.value";
 //System.out.println("pvRecord " + pvRecord);
-        PVStructure pvRequest = PVCopyFactory.createRequest(request);
+        PVStructure pvRequest = PVCopyFactory.createRequest(request,requester);
 //System.out.println("request:" + request);
 //System.out.println("pvRequest:" + pvRequest);
         MonitorRequesterImpl monitorRequester = new  MonitorRequesterImpl(pvRecord,pvRequest);
@@ -359,7 +372,7 @@ public class MonitorTest extends TestCase {
         PVDouble pvRecordPowerValue = (PVDouble)pvStructure.getSubField("power.value");
         String request = "alarm,timeStamp,power.value";
 //System.out.println("pvRecord " + pvRecord);
-        PVStructure pvRequest = PVCopyFactory.createRequest(request);
+        PVStructure pvRequest = PVCopyFactory.createRequest(request,requester);
 //System.out.println("request:" + request);
 //System.out.println("pvRequest:" + pvRequest);
         MonitorRequesterImpl monitorRequester = new  MonitorRequesterImpl(pvRecord,pvRequest);
@@ -445,7 +458,7 @@ public class MonitorTest extends TestCase {
         PVDouble pvRecordPowerValue = (PVDouble)pvStructure.getSubField("power.value");
         String request = "record[periodicRate=.2]field(alarm,timeStamp,power.value)";
 //System.out.println("pvRecord " + pvRecord);
-        PVStructure pvRequest = PVCopyFactory.createRequest(request);
+        PVStructure pvRequest = PVCopyFactory.createRequest(request,requester);
 //System.out.println("request:" + request);
 //System.out.println("pvRequest:" + pvRequest);
         MonitorRequesterImpl monitorRequester = new  MonitorRequesterImpl(pvRecord,pvRequest);

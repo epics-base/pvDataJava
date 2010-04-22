@@ -329,7 +329,8 @@ public class DatabaseExampleTest extends TestCase {
         Field lowField = fieldCreate.createScalar("low", ScalarType.pvDouble);
         Field highField = fieldCreate.createScalar("high", ScalarType.pvDouble);
         Field[] fields = new Field[]{lowField,highField};
-        StructureScalar displayLimit = fieldCreate.createStructureScalar("displayLimit", fields);
+        Structure structure = fieldCreate.createStructure("", fields);
+        StructureScalar displayLimit = fieldCreate.createStructureScalar("displayLimit", structure);
         PVStructure pvTop = dataCreate.createPVStructure(null, "top", new Field[0]);
         PVStructureScalar pvDisplayLimit = dataCreate.createPVStructureScalar(pvTop, displayLimit);
         PVDouble pvValue = (PVDouble)dataCreate.createPVScalar(pvTop, "value",ScalarType.pvDouble);
@@ -836,7 +837,8 @@ public class DatabaseExampleTest extends TestCase {
     	Field lowField = fieldCreate.createScalar("low", ScalarType.pvDouble);
     	Field highField = fieldCreate.createScalar("high", ScalarType.pvDouble);
     	Field[] fields = new Field[]{lowField,highField};
-    	StructureArray displayLimits = fieldCreate.createStructureArray("displayLimits",fields);
+    	Structure structure = fieldCreate.createStructure("", fields);
+    	StructureArray displayLimits = fieldCreate.createStructureArray("displayLimits",structure);
     	PVStructure pvTop = dataCreate.createPVStructure(null, "top", new Field[0]);
     	PVStructureArray pvDisplayLimits = dataCreate.createPVStructureArray(pvTop, displayLimits);
     	PVDouble pvValue = (PVDouble)dataCreate.createPVScalar(pvTop, "value",ScalarType.pvDouble);
@@ -867,7 +869,8 @@ public class DatabaseExampleTest extends TestCase {
         Field lowField = fieldCreate.createScalar("low", ScalarType.pvDouble);
         Field highField = fieldCreate.createScalar("high", ScalarType.pvDouble);
         Field[] fields = new Field[]{lowField,highField};
-        StructureScalar displayLimit = fieldCreate.createStructureScalar("displayLimit", fields);
+        Structure structure = fieldCreate.createStructure("", fields);
+        StructureScalar displayLimit = fieldCreate.createStructureScalar("displayLimit", structure);
         PVStructure pvTop = dataCreate.createPVStructure(null, "top", new Field[0]);
         PVStructureScalar pvDisplayLimit = dataCreate.createPVStructureScalar(pvTop, displayLimit);
         PVDouble pvValue = (PVDouble)dataCreate.createPVScalar(pvTop, "value",ScalarType.pvDouble);
@@ -895,7 +898,8 @@ public class DatabaseExampleTest extends TestCase {
     	Field lowField = fieldCreate.createScalar("low", ScalarType.pvDouble);
     	Field highField = fieldCreate.createScalar("high", ScalarType.pvDouble);
     	Field[] fields = new Field[]{lowField,highField};
-    	StructureArray displayLimits = fieldCreate.createStructureArray("displayLimits",fields);
+    	Structure structure = fieldCreate.createStructure("", fields);
+    	StructureArray displayLimits = fieldCreate.createStructureArray("displayLimits",structure);
     	PVStructure pvTop = dataCreate.createPVStructure(null, "top", new Field[0]);
     	PVStructureArray pvDisplayLimits = dataCreate.createPVStructureArray(pvTop, displayLimits);
     	PVDouble pvValue = (PVDouble)dataCreate.createPVScalar(pvTop, "value",ScalarType.pvDouble);

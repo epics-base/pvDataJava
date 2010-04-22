@@ -328,7 +328,11 @@ public final class ConvertFactory {
             case pvStructure: {
             	PVStructureScalar fromStructureScalar = (PVStructureScalar)from;
             	PVStructureScalar toStructureScalar = (PVStructureScalar)to;
-            	copyStructure(fromStructureScalar.getPVStructure(),toStructureScalar.getPVStructure());
+            	PVStructure pvFrom = fromStructureScalar.getPVStructure();
+            	PVStructure pvTo = toStructureScalar.getPVStructure();
+            	if(pvFrom!=pvTo) {
+            	    copyStructure(pvFrom,pvTo);
+            	}
             	toStructureScalar.put();
             	break;
             }
@@ -421,22 +425,32 @@ public final class ConvertFactory {
             } else if(toElementType==ScalarType.pvStructure && fromElementType==ScalarType.pvStructure) {
                 PVStructureArray pvfrom = (PVStructureArray)from;
                 PVStructureArray pvto = (PVStructureArray)to;
-                outer:
-                while(len>0) {
-                    int num = 0;
-                    PVStructure[] data = null;
-                    int fromOffset = 0;
-                    synchronized(structureArrayData) {
-                        num = pvfrom.get(offset,len,structureArrayData);
-                        data = structureArrayData.data;
-                        fromOffset = stringArrayData.offset;
-                    }
-                    if(num<=0) break;
-                    while(num>0) {
-                        int n = pvto.put(toOffset,num,data,fromOffset);
-                        if(n<=0) break outer;
-                        len -= n; num -= n; ncopy+=n; offset += n; toOffset += n; 
-                    }
+                PVStructure[] fromData = null;
+                PVStructure[] toData = null;
+                synchronized(structureArrayData) {
+                	pvfrom.get(0,1,structureArrayData);
+                	fromData = structureArrayData.data;
+                	pvto.get(0,1,structureArrayData);
+                	toData = structureArrayData.data;
+                }
+                if(fromData!=toData) {
+                	outer:
+                		while(len>0) {
+                			int num = 0;
+                			PVStructure[] data = null;
+                			int fromOffset = 0;
+                			synchronized(structureArrayData) {
+                				num = pvfrom.get(offset,len,structureArrayData);
+                				data = structureArrayData.data;
+                				fromOffset = structureArrayData.offset;
+                			}
+                			if(num<=0) break;
+                			while(num>0) {
+                				int n = pvto.put(toOffset,num,data,fromOffset);
+                				if(n<=0) break outer;
+                				len -= n; num -= n; ncopy+=n; offset += n; toOffset += n; 
+                			}
+                		}
                 }
             } else if(toElementType==ScalarType.pvString) {
                 PVStringArray pvto = (PVStringArray)to;
@@ -508,6 +522,7 @@ public final class ConvertFactory {
                 if(from.equals(to)) return;
                 throw new IllegalArgumentException("Convert.copyStructure destination is immutable");
             }
+            if(from==to) return;
             PVField[] fromDatas = from.getPVFields();
             PVField[] toDatas = to.getPVFields();
             if(fromDatas.length!=toDatas.length) {

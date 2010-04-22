@@ -14,6 +14,7 @@ import org.epics.pvData.factory.PVReplaceFactory;
 import org.epics.pvData.misc.BitSet;
 import org.epics.pvData.pv.Field;
 import org.epics.pvData.pv.FieldCreate;
+import org.epics.pvData.pv.MessageType;
 import org.epics.pvData.pv.PVDataCreate;
 import org.epics.pvData.pv.PVDatabase;
 import org.epics.pvData.pv.PVDouble;
@@ -47,6 +48,19 @@ public class PVCopyTest extends TestCase {
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();
     private static PVDataCreate pvDataCreate = PVDataFactory.getPVDataCreate();
     private static BitSetUtil bitSetUtil = BitSetUtilFactory.getCompressBitSet();
+    private static final Requester requester = new RequesterImpl();
+    
+    private static class RequesterImpl implements Requester {
+		@Override
+		public String getRequesterName() {
+			return "pvCopyTest";
+		}
+		@Override
+		public void message(String message, MessageType messageType) {
+		    System.out.printf("message %s messageType %s%n",message,messageType.name());
+			
+		}
+    }
     
     public static void testPVCopy() {
      // get database for testing
@@ -428,7 +442,7 @@ System.out.println("pvCopyStructure " + pvCopyStructure);
                  + " Note where power and alarm are chosen.%n");
         pvRecord = master.findRecord("powerSupplyArray");
         pvStructure = pvRecord.getPVStructure();
-        pvRequest = PVCopyFactory.createRequest("supply.0.power.value,supply.0.alarm,timeStamp");
+        pvRequest = PVCopyFactory.createRequest("supply.0.power.value,supply.0.alarm,timeStamp",requester);
         pvCopy = PVCopyFactory.create(pvRecord, pvRequest,null);
         pvCopyStructure = pvCopy.createPVStructure();
         bitSet = new BitSet(pvCopyStructure.getNumberFields());

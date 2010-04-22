@@ -30,6 +30,10 @@ public class BaseStructureArray extends BaseArray implements StructureArray {
         super(fieldName, ScalarType.pvStructure);
         structure = fieldCreate.createStructure("", fields);
     }
+    public BaseStructureArray(String fieldName,Structure elementStructure) {
+    	super(fieldName, ScalarType.pvStructure);
+    	this.structure = elementStructure;
+    }
     /* (non-Javadoc)
      * @see org.epics.pvData.pv.StructureArray#getStructure()
      */

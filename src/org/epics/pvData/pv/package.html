@@ -10,20 +10,20 @@
 <body>
 <h1 style="text-align: center">EPICS PVData: pv<br />
 package: org.epics.pvData.pv<br />
-2010.04.15</h1>
+2010.04.22</h1>
 CONTENTS 
 
 <div class="toc">
 <ul>
   <li><a href="#Overview">Overview</a></li>
-  <li><a href="#Process">Process Variable Reflection</a>
+  <li><a href="#Process">Process Variable Reflection</a> 
     <ul>
       <li><a href="#Type">Type</a></li>
       <li><a href="#Reflection">Reflection</a></li>
     </ul>
   </li>
   <li><a href="#Status">Status</a></li>
-  <li><a href="#PVField">PVField - Data Interfaces</a>
+  <li><a href="#PVField">PVField - Data Interfaces</a> 
     <ul>
       <li><a href="#PVField1">PVField</a></li>
       <li><a href="#PVRecordFi">PVRecordField</a></li>
@@ -34,7 +34,7 @@ CONTENTS
       <li><a href="#Primitive">Primitive PVField types</a></li>
       <li><a href="#PVString">PVString</a></li>
       <li><a href="#PVStructur">PVStructureScalar</a></li>
-      <li><a href="#PVArray">PVArray and Extensions</a>
+      <li><a href="#PVArray">PVArray and Extensions</a> 
         <ul>
           <li><a href="#PVArray1">PVArray</a></li>
           <li><a href="#PVArray2">PVArray Extensions</a></li>
@@ -42,7 +42,7 @@ CONTENTS
         </ul>
       </li>
       <li><a href="#PVStructur1">PVStructure</a></li>
-      <li><a href="#PVRecord">PVRecord</a>
+      <li><a href="#PVRecord">PVRecord</a> 
         <ul>
           <li><a href="#Record">Record Locking</a></li>
         </ul>
@@ -52,7 +52,7 @@ CONTENTS
     </ul>
   </li>
   <li><a href="#Convert">Convert</a></li>
-  <li><a href="#Examples">Examples</a>
+  <li><a href="#Examples">Examples</a> 
     <ul>
       <li><a href="#Accessing">Accessing PVData</a></li>
       <li><a href="#Creating">Creating PVData</a></li>
@@ -206,9 +206,9 @@ over the network.</p>
     interface FieldCreate {
         Field create(String fieldName,Field field);
         Scalar createScalar(String fieldName,ScalarType scalarType);
-        StructureScalar createStructureScalar(String fieldName,Field[] fields);
+        StructureScalar createStructureScalar(String fieldName,Structure structure);
         Array createArray(String fieldName,ScalarType elementType);
-        StructureScalar createStructureScalar(String fieldName,Field[] fields);
+        StructureScalar createStructureArray(String fieldName,Structure elementStructure);
         Structure createStructure(String fieldName, Field[] field);
     }</pre>
 
@@ -351,8 +351,8 @@ structure and a record also has an associated PVField.</p>
   <dt>getField</dt>
     <dd>Get the reflection interface for the data.</dd>
   <dt>getParent</dt>
-    <dd>Get the interface for the parent or null if this is the PVRecord
-      itself.</dd>
+    <dd>Get the interface for the parent or null if this is the top level
+      PVStructure.</dd>
   <dt>getPVRecordField</dt>
     <dd>Get the PVRecordField interface for field. This is null if this field
       is not part of a record.</dd>
@@ -885,7 +885,8 @@ i.e. the field looks like a leaf field.</p>
 
 <h3 id="PVRecord">PVRecord</h3>
 
-<p>Each PVField is a field within a PVRecord:</p>
+<p>A PVRecord has a top level PVStructure that provides the following
+methods:</p>
 <pre>    interface PVRecord {
         PVStructure getPVStructure();
         String getRecordName();

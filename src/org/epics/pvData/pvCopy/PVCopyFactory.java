@@ -7,6 +7,7 @@ package org.epics.pvData.pvCopy;
 
 import org.epics.pvData.pv.PVRecord;
 import org.epics.pvData.pv.PVStructure;
+import org.epics.pvData.pv.Requester;
 /**
  * A Factory that creates a PVCopy interface which describes a subset of the fields
  * within a PVRecord. It can be used by Channel Access servers.
@@ -30,10 +31,10 @@ public class PVCopyFactory {
      * Create a request structure for the create calls in Channel.
      * See the package overview documentation for details.
      * @param request The field request. See the package overview documentation for details.
-     * @return The request structure.
-     * @throws IllegalArgumentException if invalid request.
+     * @param requester The requester;
+     * @return The request structure if an invalid request was given. 
      */
-    public static PVStructure createRequest(String request) {
-    	return CreateRequestImpl.createRequest(request);
+    public static PVStructure createRequest(String request,Requester requester) {
+    	return CreateRequestImpl.createRequest(request,requester);
     }
 }

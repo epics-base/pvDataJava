@@ -108,7 +108,8 @@ public class PVDataFactory {
         @Override
         public PVScalar createPVScalar(PVStructure parent,String fieldName,ScalarType scalarType)
         {
-            return createPVScalar(parent, fieldCreate.createScalar(fieldName, scalarType));
+        	Scalar scalar = fieldCreate.createScalar(fieldName, scalarType);
+            return createPVScalar(parent,scalar);
         }
         /* (non-Javadoc)
          * @see org.epics.pvData.pv.PVDataCreate#createPVScalar(org.epics.pvData.pv.PVStructure, java.lang.String, org.epics.pvData.pv.PVScalar)
@@ -140,7 +141,7 @@ public class PVDataFactory {
 		 */
 		@Override
 		public PVStructureScalar createPVStructureScalar(PVStructure parent,String fieldName, PVStructure structureToClone) {
-			StructureScalar structureScalar = fieldCreate.createStructureScalar(fieldName, structureToClone.getStructure().getFields());
+			StructureScalar structureScalar = fieldCreate.createStructureScalar(fieldName, structureToClone.getStructure());
 			PVStructureScalar pvStructureScalar = new BasePVStructureScalar(parent,structureScalar);
 			convert.copyStructure(structureToClone, pvStructureScalar.getPVStructure());
 			return pvStructureScalar;

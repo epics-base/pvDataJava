@@ -13,12 +13,7 @@ package org.epics.pvData.pv;
  * @author mrk
  *
  */
-public interface PVStructureArray extends PVArray{
-	/**
-	 * Get the introspection interface.
-	 * @return
-	 */
-	StructureArray getStructureArray();
+public interface PVDoubleArray extends PVArray{
     /**
      * Get values from a <i>PVDoubleArray</i>
      * and put them into <i>double[]to</i>
@@ -33,9 +28,9 @@ public interface PVStructureArray extends PVArray{
      * a reference to the array and data.offset is the offset into the
      * array.
      */
-    int get(int offset, int length, StructureArrayData data);
+    int get(int offset, int length, DoubleArrayData data);
     /**
-     * Put values into a <i>PVStructureArray</i> from <i>PVStructure[]from</i>
+     * Put values into a <i>PVDoubleArray</i> from <i>double[]from</i>
      * @param offset The offset to the first element to put.
      * @param length The maximum number of elements to transfer.
      * @param from The array from which to get the data.
@@ -45,12 +40,12 @@ public interface PVStructureArray extends PVArray{
      * If the value is less then length then put should be called again.
      * @throws IllegalStateException if the field is not mutable.
      */
-    int put(int offset,int length, PVStructure[] from, int fromOffset);
+    int put(int offset,int length, double[] from, int fromOffset);
     /**
      * Share the data from caller.
      * The capacity and length are taken from the array and this array is made immutable.
      * This should only be used to share immutable data.
      * @param from The data to share.
      */
-    void shareData(PVStructure[] from);
+    void shareData(double[] from);
 }
