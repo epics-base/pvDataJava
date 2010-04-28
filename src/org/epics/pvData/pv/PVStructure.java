@@ -5,7 +5,6 @@
  */
 package org.epics.pvData.pv;
 
-import org.epics.pvData.pvCopy.BitSetSerializable;
 
 
 /**

@@ -10,20 +10,21 @@
 <body>
 <h1 style="text-align: center">EPICS PVData: pv<br />
 package: org.epics.pvData.pv<br />
-2010.04.22</h1>
+2010.04.27</h1>
 CONTENTS 
 
 <div class="toc">
 <ul>
   <li><a href="#Overview">Overview</a></li>
-  <li><a href="#Process">Process Variable Reflection</a> 
+  <li><a href="#Process">Process Variable Reflection</a>
     <ul>
       <li><a href="#Type">Type</a></li>
+      <li><a href="#Serializab">Serializable</a></li>
       <li><a href="#Reflection">Reflection</a></li>
     </ul>
   </li>
   <li><a href="#Status">Status</a></li>
-  <li><a href="#PVField">PVField - Data Interfaces</a> 
+  <li><a href="#PVField">PVField - Data Interfaces</a>
     <ul>
       <li><a href="#PVField1">PVField</a></li>
       <li><a href="#PVRecordFi">PVRecordField</a></li>
@@ -34,7 +35,7 @@ CONTENTS
       <li><a href="#Primitive">Primitive PVField types</a></li>
       <li><a href="#PVString">PVString</a></li>
       <li><a href="#PVStructur">PVStructureScalar</a></li>
-      <li><a href="#PVArray">PVArray and Extensions</a> 
+      <li><a href="#PVArray">PVArray and Extensions</a>
         <ul>
           <li><a href="#PVArray1">PVArray</a></li>
           <li><a href="#PVArray2">PVArray Extensions</a></li>
@@ -42,7 +43,7 @@ CONTENTS
         </ul>
       </li>
       <li><a href="#PVStructur1">PVStructure</a></li>
-      <li><a href="#PVRecord">PVRecord</a> 
+      <li><a href="#PVRecord">PVRecord</a>
         <ul>
           <li><a href="#Record">Record Locking</a></li>
         </ul>
@@ -52,7 +53,7 @@ CONTENTS
     </ul>
   </li>
   <li><a href="#Convert">Convert</a></li>
-  <li><a href="#Examples">Examples</a> 
+  <li><a href="#Examples">Examples</a>
     <ul>
       <li><a href="#Accessing">Accessing PVData</a></li>
       <li><a href="#Creating">Creating PVData</a></li>
@@ -78,7 +79,7 @@ org.epics.pvData.factory.</p>
     a PVRecord.</li>
 </ol>
 
-<p>Each PVRecord has a unique record name and is a top level PVStructure,
+<p>Each PVRecord has a unique record name and has top level PVStructure,
 which is a structured set of PVFields. A PVRecord can be:</p>
 <dl>
   <dt>locked</dt>
@@ -98,13 +99,13 @@ which is a structured set of PVFields. A PVRecord can be:</p>
       a message is generated.</dd>
 </dl>
 
-<p>A PVRecord is a top level PVStructure. A PVStructure is a field that
-contains an array of subfields. Each field has code for accessing the field.
-The interface for each field is PVField or an interface that extends PVField.
-Each field also has an introspection interface, which is Field or an
-extension of Field. If a PVField is in a record then it also has an
-associated PVRecordField. This package overview describes the complete set of
-data and introspection interfaces for pvData.</p>
+<p>A PVStructure is a field that contains an array of subfields. Each field
+has code for accessing the field. The interface for each field is PVField or
+an interface that extends PVField. Each field also has an introspection
+interface, which is Field or an extension of Field. If a PVField is in a
+record then it also has an associated PVRecordField. This package overview
+describes the complete set of data and introspection interfaces for
+pvData.</p>
 
 <p>This package also describes an interface Convert, which provides a rich
 set of methods for converting and copying data between field.</p>
@@ -162,17 +163,35 @@ over the network.</p>
         public static ScalarType getScalarType(String type);
     }</pre>
 
+<h3 id="Serializab">Serializable</h3>
+
+<p>The following interfaces are called by pvAccess for transporting data over
+the network. The abstract and base classes ensure that these methods are
+properly implemented. </p>
+<pre>    interface Serializable {
+        void serialize(ByteBuffer buffer);
+        void deserialize(ByteBuffer buffer);
+    }
+
+    interface SerializableControl {
+        void flushSerializeBuffer();
+        void ensureBuffer(int size);
+    }
+
+    interface SerializableArray extends Serializable {
+        void serialize(ByteBuffer buffer, SerializableControl flusher, int offset, int count);
+    }       
+
+    interface BitSetSerializable {
+       void serialize(ByteBuffer buffer, SerializableControl flusher, BitSet bitSet);
+       void deserialize(ByteBuffer buffer, DeserializableControl control, BitSet bitSet);
+    }</pre>
+
 <h3 id="Reflection">Reflection</h3>
 
 <p>This section defines the complete set of Java PV reflection interfaces.</p>
 <pre>    
-    interface Serializable {
-        void serialize(ByteBuffer buffer);
-        int getSerializationSize();
-        void deserialize(ByteBuffer buffer);
-    }
-
-    interface Field extends Serializable{
+    interface Field {
         String getFieldName();
         Type getType();
         String toString();
@@ -191,6 +210,10 @@ over the network.</p>
         ScalarType getElementType();
     }
 
+    interface StructureArray extends Array{
+        Structure getStructure();
+    }
+
     interface Structure extends Field{
         String[] getFieldNames();
         Field getField(String fieldName);
@@ -198,25 +221,17 @@ over the network.</p>
         Field[] getFields();
     }
 
-
-    interface StructureArray extends Array{
-        Structure getStructure();
-    }
-
     interface FieldCreate {
         Field create(String fieldName,Field field);
         Scalar createScalar(String fieldName,ScalarType scalarType);
         StructureScalar createStructureScalar(String fieldName,Structure structure);
         Array createArray(String fieldName,ScalarType elementType);
-        StructureScalar createStructureArray(String fieldName,Structure elementStructure);
+        StructureArray createStructureArray(String fieldName,Structure elementStructure);
         Structure createStructure(String fieldName, Field[] field);
     }</pre>
 
 <p>The above definitions support the following:</p>
 <dl>
-  <dt>Serializable</dt>
-    <dd>A Field can be serialized. This is required for implementing
-    pvAccess.</dd>
   <dt>Field</dt>
     <dd>A field: 
       <dl>
@@ -250,16 +265,19 @@ over the network.</p>
 <p>Status provides a way to pass status back to client code. It is new and
 not currently used by pvData but may be in the future. It is used by code
 that uses pvData.</p>
-<pre>    interface Status {
+<pre>    interface Status extends Serializable  {
         public enum StatusType {OK,WARNING,ERROR,FATAL};
         StatusType getType();
         String getMessage();
         String getStackDump();
+        boolean isOK();
+        boolean isSuccess();
     }
     
     interface StatusCreate {
         Status getStatusOK(); 
         Status createStatus(StatusType type, String message, Throwable cause);
+        Status deserializeStatus(ByteBuffer buffer, DeserializableControl control);
     }</pre>
 
 <p>The Status methods are:</p>
@@ -281,6 +299,9 @@ that uses pvData.</p>
       stackDump.</dd>
   <dt>createStatus</dt>
     <dd>Create a new Status.</dd>
+  <dt>deserializeStatus</dt>
+    <dd>Use this method instead of Status.deserialize(), since this allows OK
+      status optimization.</dd>
 </dl>
 <hr />
 
@@ -347,7 +368,8 @@ structure and a record also has an associated PVField.</p>
       ...". </dd>
   <dt>getFullName</dt>
     <dd>Get the full name. This returns a name in the form "recordName.name
-      ...".</dd>
+      ...". If the fields is not part of a record it is the same as
+      getFullFieldName.</dd>
   <dt>getField</dt>
     <dd>Get the reflection interface for the data.</dd>
   <dt>getParent</dt>
@@ -484,10 +506,12 @@ that the underlying fields can not have attached listeners.</p>
 <p>where</p>
 <dl>
   <dt>dataPut(PVField pvField)</dt>
-    <dd>pvField has been modified.</dd>
+    <dd>pvField has been modified. This is called if the listener has called
+      PVRecordField.addListener for pvField.</dd>
   <dt>dataPut(PVStructure requested,PVField pvField)</dt>
     <dd>pvField has been modified. Requested is the field to which the
-      requester issued a pvField.addListener.</dd>
+      requester issued a pvField.addListener. This is called if the listener
+      has called PVRecordField.addListener for requested.</dd>
   <dt>beginGroup</dt>
     <dd>A related set of changes is being started.</dd>
   <dt>endGroup</dt>
@@ -567,7 +591,7 @@ e. the field is a leaf. The methods are:</p>
       structure returned by getPVStructure. It is not possible to attach
       listeners to the underlying PVStructure.</dd>
   <dt>put</dt>
-    <dd>If a client modifies the stricture than this must be called. </dd>
+    <dd>If a client modifies the structure than this must be called. </dd>
 </dl>
 
 <h3 id="PVArray">PVArray and Extensions</h3>
@@ -577,7 +601,7 @@ e. the field is a leaf. The methods are:</p>
 <p><span style="font-family: courier">PVArray</span> is the base interface
 for all the other PV Array interfaces. It extends PVField and provides the
 additional methods:</p>
-<pre>    interface PVArray extends PVField {
+<pre>    interface PVArray extends PVField, SerializableArray {
         Array getArray();
         int getLength();
         void setLength(int len);
@@ -669,20 +693,20 @@ following reads an entire array:</p>
 <p>shareData results in the PVArray using the primitive array that is passed
 to this method. This is most useful for immutable arrays. In this case the
 caller must set the PVArray to be immutable. In the PVArray is not immutable
-then it is the applications responsibility to coordinate accesss to the
-array. Again this violates the principle that objects should not expose their
-internal data but is imporant for immutable arrays. For example pvData and
+then it is the applications responsibility to coordinate access to the array.
+Again this violates the principle that objects should not expose their
+internal data but is important for immutable arrays. For example pvData and
 the javaIOC define many enumerated structures where an enumerated structure
 has three fields: index, choice, and choices. Choices is a PVStringArray that
 holds the enumerated choices. Index is a PVInt that is the index of the
-currently selected choice and choice is a PVString which is the currectly
+currently selected choice and choice is a PVString which is the currently
 selected choice. For many enumerated structures the choices is immutable.
 Allowing the choices internal String[] to be shared between all the instances
 of an enumerated structure saves on storage. An example is alarmSeverity.
 Another reason for allowing shared data is so that an application which
 processes an array can be separated into multiple modules that directly
 access the internal data array of a PVArray. This can be required for
-minimizing CPU overhead. In this case it is the applications responspibility
+minimizing CPU overhead. In this case it is the applications responsibility
 to coordinate access to the array.</p>
 
 <h4 id="Complete">Complete set of PVArray Extensions</h4>
@@ -786,7 +810,7 @@ i.e. the field looks like a leaf field.</p>
 <h3 id="PVStructur1">PVStructure</h3>
 
 <p>The interface for a structure is:</p>
-<pre>    interface PVStructure extends PVField {
+<pre>    interface PVStructure extends PVField, BitSetSerializable {
         Structure getStructure();
         PVField[] getPVFields();
         PVField getSubField(String fieldName);
@@ -805,9 +829,9 @@ i.e. the field looks like a leaf field.</p>
         PVDouble getDoubleField(String fieldName);
         PVString getStringField(String fieldName);
         PVStructureScalar getStructureScalarField(String fieldName);
-        PVStructure getStructureField(String fieldName,String structureName);
         PVArray getArrayField(String fieldName,Type elementType);
-        StructureScalar createStructureScalar(String fieldName,Field[] fields);
+        PVStructureArray getStructureArrayField(String fieldName);
+        PVStructure getStructureField(String fieldName,String structureName);
         String getExtendsStructureName();
         boolean putExtendsStructureName(String extendsStructureName);
     }</pre>
@@ -843,9 +867,6 @@ i.e. the field looks like a leaf field.</p>
       is the actual PVField rather than just the data. Update any internal
       data required. This should NOT be called if any code is attached to any
       of the fields in the top level structure.</dd>
-  <dt>postPut</dt>
-    <dd>post a put to a subfield of this structure. It does not have to be a
-      direct subfield.</dd>
   <dt>getBooleanField</dt>
     <dd>Look for fieldName. If found and it has the correct type return the
       interface. This and the following methods are convenience methods that
@@ -875,10 +896,13 @@ i.e. the field looks like a leaf field.</p>
   <dt>getStructureScalarField</dt>
     <dd>Look for fieldName. If found and it has the correct type return the
       interface.</dd>
-  <dt>getStringField</dt>
+  <dt>getArrayField</dt>
     <dd>Look for fieldName. If found and it has the correct type return the
       interface.</dd>
-  <dt>getArrayField</dt>
+  <dt>getStructureArrayField</dt>
+    <dd>Look for fieldName. If found and it has the correct type return the
+      interface.</dd>
+  <dt>getStructureField</dt>
     <dd>Look for fieldName. If found and it has the correct type return the
       interface.</dd>
 </dl>
@@ -911,8 +935,8 @@ methods:</p>
   <dt>getRecordName</dt>
     <dd>Returns the record name.</dd>
   <dt>message</dt>
-    <dd>This can be called any code that has access to the record
-    instance.</dd>
+    <dd>This is called by AbstractPVField if it has a RecordField. It can be
+      called by other code but most code will not need it.</dd>
   <dt>addRequester</dt>
     <dd>Add a requester to receive messages.</dd>
   <dt>removeRequester</dt>
@@ -1039,10 +1063,11 @@ where
 
 <p>A PVDatabase contains structures and records. Structures provided an easy
 way to create an initial set of subfields of a structure field of record
-instances. When a structure field of a record is defined as follows:</p>
+instances or other structures. When a structure field of a record is defined
+as follows:</p>
 <pre>    &lt;record name = ... /&gt;
         &lt;!-- other fields --&gt;
-        &lt;structure name = "name" type = "structName" /&gt;
+        &lt;structure name = "name" extends = "structName" /&gt;
         &lt;!-- ... --&gt;
     &lt;/record&gt;</pre>
 
@@ -1057,10 +1082,12 @@ in structure "structName". </p>
         PVRecord findRecord(String name);
         boolean addRecord(PVRecord pvRecord);
         boolean removeRecord(PVRecord pvRecord);
+        String[] getRecordNames();
         PVRecord[] getRecords();
         PVStructure findStructure(String name);
         boolean addStructure(PVStructure pvStructure);
         boolean removeStructure(PVStructure pvStructure);
+        String[] getStructureNames();
         PVStructure getStructures();
         void message(String message, MessageType messageType);
         void addRequester(Requester requester);
@@ -1088,6 +1115,8 @@ in structure "structName". </p>
   <dt>removeRecord</dt>
     <dd>Remove a record from the database. If the record was not in the
       database false is returned.</dd>
+  <dt>getRecordNames</dt>
+    <dd>Get an array of the record names.</dd>
   <dt>getRecords</dt>
     <dd>Get a array of all the records.</dd>
   <dt>findStructure</dt>
@@ -1099,6 +1128,8 @@ in structure "structName". </p>
   <dt>removeStructure</dt>
     <dd>Remove a structure from the database. If it did not exist false is
       returned.</dd>
+  <dt>getStructureNames</dt>
+    <dd>Get an array of the structure names.</dd>
   <dt>getStructures</dt>
     <dd>Get a array of all the structures.</dd>
   <dt>message</dt>

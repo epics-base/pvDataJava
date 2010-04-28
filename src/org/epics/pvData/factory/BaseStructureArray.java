@@ -19,45 +19,45 @@ import org.epics.pvData.pv.StructureArray;
  */
 public class BaseStructureArray extends BaseArray implements StructureArray {
 	private static final FieldCreate fieldCreate = FieldFactory.getFieldCreate();
-    private Structure structure;
-    
-    /**
-     * Constructor for BaseArray.
-     * @param fieldName The field name.
-     * @param fields The introspection interfaces for the subfields of structure.
-     */
-    public BaseStructureArray(String fieldName,Field[] fields) {
-        super(fieldName, ScalarType.pvStructure);
-        structure = fieldCreate.createStructure("", fields);
-    }
-    public BaseStructureArray(String fieldName,Structure elementStructure) {
-    	super(fieldName, ScalarType.pvStructure);
-    	this.structure = elementStructure;
-    }
-    /* (non-Javadoc)
-     * @see org.epics.pvData.pv.StructureArray#getStructure()
-     */
-    @Override
+	private Structure structure;
+
+	/**
+	 * Constructor for BaseArray.
+	 * @param fieldName The field name.
+	 * @param fields The introspection interfaces for the subfields of structure.
+	 */
+	public BaseStructureArray(String fieldName,Field[] fields) {
+		super(fieldName, ScalarType.pvStructure);
+		structure = fieldCreate.createStructure("", fields);
+	}
+	public BaseStructureArray(String fieldName,Structure elementStructure) {
+		super(fieldName, ScalarType.pvStructure);
+		this.structure = elementStructure;
+	}
+	/* (non-Javadoc)
+	 * @see org.epics.pvData.pv.StructureArray#getStructure()
+	 */
+	@Override
 	public Structure getStructure() {
 		return structure;
 	}
-    /* (non-Javadoc)
-     * @see org.epics.pvData.factory.BaseField#toString()
-     */
-    public String toString() { return getString(0);}
-    /* (non-Javadoc)
-     * @see org.epics.pvData.factory.BaseField#toString(int)
-     */
-    public String toString(int indentLevel) {
-        return getString(indentLevel);
-    }
-    
-    private String getString(int indentLevel) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(super.toString(indentLevel));
-        builder.append(" structure " + structure.toString());
-        return builder.toString();
-    }
+	/* (non-Javadoc)
+	 * @see org.epics.pvData.factory.BaseField#toString()
+	 */
+	public String toString() { return getString(0);}
+	/* (non-Javadoc)
+	 * @see org.epics.pvData.factory.BaseField#toString(int)
+	 */
+	public String toString(int indentLevel) {
+		return getString(indentLevel);
+	}
+
+	private String getString(int indentLevel) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(super.toString(indentLevel));
+		builder.append(" structure " + structure.toString());
+		return builder.toString();
+	}
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
 	 */
