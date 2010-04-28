@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+  <title>EPICS PVData</title>
+</head>
+
+<body>
+<h1 style="text-align: center">EPICS PVData<br />
+Overview<br />
+2009.11.19</h1>
+CONTENTS 
+
+<div class="toc">
+<ul>
+  <li><a href="#Introducti">Introduction</a></li>
+  <li><a href="#Interface">Interface Definitions</a> 
+    <ul>
+      <li><a href="#Types">Types</a></li>
+      <li><a href="#Introspect">Introspection Interfaces</a></li>
+      <li><a href="#Data">Data Interfaces</a></li>
+      <li><a href="#Introspect1">Introspection and Data creation</a></li>
+      <li><a href="#PVData">PVData Conversion</a></li>
+    </ul>
+  </li>
+  <li><a href="#Package">Package Summary</a> 
+    <ul>
+      <li><a href="#L236">{@link org.epics.pvData.pv}</a></li>
+      <li><a href="#L240">{@link org.epics.pvData.factory}</a></li>
+      <li><a href="#L272">{@link org.epics.pvData.property}</a></li>
+      <li><a href="#L280">{@link org.epics.pvData.xml}</a></li>
+      <li><a href="#L284">{@link org.epics.pvData.misc}</a></li>
+      <li><a href="#L288">{@link org.epics.pvData.test}</a></li>
+      <li><a href="#L292">{@link org.epics.pvData.pvCopy}</a></li>
+      <li><a href="#L296">{@link org.epics.pvData.monitor}</a></li>
+    </ul>
+  </li>
+  <li><a href="#License">License Agreement</a></li>
+</ul>
+</div>
+<hr />
+
+<h2 style="text-align: center" id="Introducti">Introduction</h2>
+<hr />
+
+<p>This product is available via the <a href="#LicenseAgreement">open source
+license</a> described at the end of this document.</p>
+
+<p>PVData is one of a set of related projects. It describes and implements
+the data that the other projects support. Thus it is not useful by itself but
+understanding PVData is required in order to understand the other projects.
+The reader should also become familar with projects CAJv4 and javaIOC, which
+are located via the same sourceforge site as this project.</p>
+
+<p>PVData (Process Variable Data) defines and implements an efficent way to
+store, access, and transmit memory resident structured data.</p>
+<dl>
+  <dt>definition</dt>
+    <dd>Package org.epics.pvData.pv has Java interface definitions that
+      define PVData. Although defined with Java syntax they also document
+      what is required for implementation in other languages such as C++.</dd>
+  <dt>implementation</dt>
+    <dd>The set of packages provides by this project provide a complete Java
+      implementation of PVData. It will be used to implement Channel Access:
+      Network, Client, and Server. It is used by the JavaIOC.</dd>
+  <dt>efficient</dt>
+    <dd>Small memory footprint, low cpu overhead, and concise code base.</dd>
+  <dt>data storage</dt>
+    <dd>PVData defines separate introspection and data interfaces. The
+      introspection interfaces provide access to immutable objects, which
+      allows introspection instances to be freely shared. The introspection
+      interface for a process variable can be accessed without requiring
+      access to the data.</dd>
+  <dt>data access</dt>
+    <dd>Client code can access PVData via the introspection and data
+      interfaces. For "well known" data, e.g. timeStamp, specialized
+      interfaces can be provided without requiring any changes to the core
+      software.</dd>
+  <dt>data transfer</dt>
+    <dd>The separation of introspection and data interfaces allows for
+      efficient network data transfer. At connection time introspection
+      information can be passed from server to client. Each side can create a
+      data instance. The data is transferred between these instances. The
+      data in the network buffers does not have to be self describing since
+      each side has the introspection information.</dd>
+  <dt>memory resident</dt>
+    <dd>PVData only defines memory resident data.</dd>
+  <dt>structured data</dt>
+    <dd>PVData has three types: scalar, array, and structure. A scalar can be
+      one of the following: boolean, byte, short, int, long, float, double,
+      string. An array is a one dimensional array with the element type being
+      a scalar. A structure is an ordered set of fields where each field has
+      a name and type. Since a field can have type structure complex
+      structures are supported. No other types are needed since structures
+      can be defined that simulate types.</dd>
+</dl>
+
+<p>A Process Variable (PV) Database, which is a memory resident database
+holding PVData, has the following features:</p>
+<ul>
+  <li>A database has records.</li>
+  <li>Each record has a unique record name.</li>
+  <li>A record is a structure.</li>
+  <li>A field contains data of one of the following types: 
+    <ul>
+      <li>scalar : boolean, byte, short, int, long, float, double, string</li>
+      <li>array: a 1-dim array with the elementType being any scalar
+      type.</li>
+      <li>structure: a subStructure with each field being any of the
+        supported types.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>PVData was initially created to support the JavaIOC and was part of the
+JavaIOC project. It is now a separate project that is used by the JavaIOC. In
+addition to the JavaIOC, PVData is intended for use by 1) Channel Access
+Client, 2) Interface between client and network, 3) Interface between network
+and Channel Access server, 4) Interface between Server and IOC database.
+Since it is an interface to data, it could also be used by other systems,
+e.g. TANGO, TINE, etc. A high level Physics application can hold data as
+PVData. By starting a channel access server, the data can made available to
+network clients.</p>
+
+<p>PVData contains everything required to support Channel Access and Channel
+Access clients and servers. </p>
+<hr />
+
+<h2 style="text-align: center" id="Interface">Interface Definitions</h2>
+<hr />
+
+<h3 id="Types">Types</h3>
+
+<p>The following are the type definitions:</p>
+<pre>enum Type {
+    scalar,
+    scalarArray,
+    structure;
+}
+
+enum ScalarType {
+    pvBoolean,
+    pvByte,pvShort,pvInt,pvLong,
+    pvFloat,pvDouble,
+    pvString,
+    pvStructure;
+    // The following are convenience methods
+    public boolean isInteger();
+    public boolean isNumeric()
+    public boolean isPrimitive() 
+    public static ScalarType getScalarType(String type);
+}</pre>
+<dl>
+  <dt>boolean</dt>
+    <dd>true or false</dd>
+  <dt>byte</dt>
+    <dd>An 8 bit signed byte</dd>
+  <dt>short</dt>
+    <dd>16 bit signed integer</dd>
+  <dt>int</dt>
+    <dd>32 bit signed integer</dd>
+  <dt>long</dt>
+    <dd>64 bit signed integer</dd>
+  <dt>float</dt>
+    <dd>32 bit IEEE float</dd>
+  <dt>double</dt>
+    <dd>64 bit IEEE float</dd>
+  <dt>string</dt>
+    <dd>An immutable string. The Java implementation is String. For other
+      implementations the network representation must be the same as for
+    Java.</dd>
+  <dt>array</dt>
+    <dd>A one dimensional array. The element type is any scalar type.</dd>
+  <dt>structure</dt>
+    <dd>A structure of fields where each field has a name and a type.</dd>
+</dl>
+
+<h3 id="Introspect">Introspection Interfaces</h3>
+
+<p>The complete set of introspection interfaces are:</p>
+<pre>interface Scalar extends Field{
+    ScalarType getScalarType();
+}
+
+interface Array extends Field{
+    ScalarType getElementType();
+
+}
+
+interface Structure extends Field{
+    String[] getFieldNames();
+    Field getField(String fieldName);
+    int getFieldIndex(String fieldName);
+    Field[] getFields();
+
+}</pre>
+
+<p>The introspection interfaces provide access to immutable objects. This
+allows introspection interfaces to be freely shared between data objects. For
+example the introspection interface for a timeStamp, which is a structure
+containing two fields, can be stared by every record that has a time
+stamp.</p>
+
+<h3 id="Data">Data Interfaces</h3>
+
+<p>PVField is the base interface for a data field:</p>
+<pre>enum MessageType {info,warning,error,fatalError}
+
+interface Requester {
+    String getRequesterName();
+    void message(String message, MessageType messageType);
+}
+
+
+interface Serializable {
+    void serialize(ByteBuffer buffer);
+    void deserialize(ByteBuffer buffer);
+}
+
+interface PVAuxInfo {
+    PVField getPVField();
+    PVScalar createInfo(String key,ScalarType scalarType);
+    Map&lt;String,PVScalar&gt; getInfos();
+    PVScalar getInfo(String key);
+}
+
+interface PVField extends Requester, Serializable {
+    int getFieldOffset();
+    int getNextFieldOffset();
+    int getNumberFields();
+    Field getField();
+    PVStructure getParent();
+    PVRecordField getPVRecordField(); // Is null if not field of a record
+    String getFullFieldName(); 
+    String getFullName();
+    PVAuxInfo getPVAuxInfo(); //auxillary information
+    boolean isMutable();
+    void setMutable(boolean value);
+    void replacePVField(PVField newPVField);
+    void renameField(String newName);
+    void postPut(); // calls PVRecordField.postPut if this is a field of a record
+}
+
+interface PVRecordField{
+    PVRecord getPVRecord();
+    boolean addListener(PVListener pvListener);
+    void removeListener(PVListener pvListener);
+    void postPut();
+}
+
+interface PVRecord extends PVStructure {
+    PVStructure getPVStructure();
+    String getRecordName();
+    void addRequester(Requester requester);
+    void removeRequester(Requester requester);
+    void lock();
+    void unlock();
+    void lockOtherRecord(PVRecord otherRecord);
+    void beginGroupPut();
+    void endGroupPut();
+    void registerListener(PVListener pvListener);
+    void unregisterListener(PVListener pvListener);
+    boolean isRegisteredListener(PVListener pvListener);
+    void removeEveryListener();
+}</pre>
+
+<p>Each scalar type has an associated data interface: PVBoolean, PVByte,
+PVShort, PVInt, PVLong, PVFloat, PVDouble, and PVString. Each has a get and a
+put method. For example:</p>
+<pre>public interface PVDouble extends PVScalar{
+    double get();
+    void put(double value);
+}</pre>
+
+<p>PVArray is the base class for arrays.</p>
+<pre>public interface PVArray extends PVField{
+    Array getArray();
+    int getLength();
+    void setLength(int len);
+    int getCapacity();
+    void setCapacity(int len);
+    boolean isCapacityMutable();
+    void setCapacityMutable(boolean isMutable);
+}</pre>
+
+<p>For each scalar type an associated array data interface is defined. Each
+has a get and put method. For example: </p>
+<pre>public class DoubleArrayData {
+    public double[] data;
+    public int offset;
+}
+
+public interface PVDoubleArray extends PVArray{
+    int get(int offset, int len, DoubleArrayData data);
+    int put(int offset,int len, double[] from, int fromOffset);
+
+}</pre>
+
+<p>PVStructure is the data interface for a structure.</p>
+<pre>public interface PVStructure extends PVField {
+    Structure getStructure();
+    PVField[] getPVFields();
+    PVField getSubField(String fieldName);
+    boolean replaceStructureField(String fieldName,Structure structure);
+    void appendPVField(PVField pvField);
+    void removePVField(String fieldName);
+    void postPut(PVField subField);
+    // The following are convenience methods
+    PVBoolean getBooleanField(String fieldName);
+    PVByte getByteField(String fieldName);
+    PVShort getShortField(String fieldName);
+    PVInt getIntField(String fieldName);
+    PVLong getLongField(String fieldName);
+    PVFloat getFloatField(String fieldName);
+    PVDouble getDoubleField(String fieldName);
+    PVString getStringField(String fieldName);
+    PVStructure getStructureField(String fieldName);
+    PVArray getArrayField(String fieldName,ScalarType elementType);
+    String getExtendsStructureName();
+    boolean putExtendsStructureName(String extendsStructureName);
+}</pre>
+
+<h3 id="Introspect1">Introspection and Data creation</h3>
+
+<p>The following interface creates introspection instances:</p>
+<pre>public interface FieldCreate {
+    Scalar createScalar(String fieldName,ScalarType scalarType);
+    Array createArray(String fieldName,ScalarType elementType);
+    Structure createStructure(String fieldName, Field[] field);
+}</pre>
+
+<p>The following interface creates data instances:</p>
+<pre>public interface PVDataCreate {
+    PVField createPVField(PVStructure parent, Field field);
+    PVField createPVField(PVStructure parent,String fieldName,PVField fieldToClone);
+    PVScalar createPVScalar(PVStructure parent,Scalar scalar);
+    PVScalar createPVScalar(PVStructure parent,String fieldName,ScalarType fieldType);
+    PVScalar createPVScalar(PVStructure parent,String fieldName,PVScalar scalarToClone);
+    PVArray createPVArray(PVStructure parent,Array array);
+    PVArray createPVArray(PVStructure parent,String fieldName,ScalarType elementType);
+    PVArray createPVArray(PVStructure parent,String fieldName,PVArray arrayToClone);
+    PVStructure createPVStructure(PVStructure parent,String fieldName,Field[] fields);
+    PVStructure createPVStructure(PVStructure parent,String fieldName,PVStructure structToClone);
+    PVStructure createPVStructure(PVStructure parent,String fieldName,
+         PVDatabase pvDatabase,String structureName);
+    PVRecord createPVRecord(String recordName,Field[] fields);
+    PVRecord createPVRecord(String recordName,PVStructure structToClone);
+    PVRecord createPVRecord(String recordName,PVDatabase pvDatabase,
+         String structureName);
+    PVField[] flattenPVStructure(PVStructure pvStructure);
+}</pre>
+
+<h3 id="PVData">PVData Conversion</h3>
+
+<p>An interface named Convert provides all reasonable conversions to/from
+PVData. See org.epics.pvData.pv.Convert for details.</p>
+<hr />
+
+<h2 style="text-align: center" id="Package">Package Summary</h2>
+<hr />
+
+<p>This document describes everything via Java definitions. The initial
+implementation is in Java but the functionality could also be implemented in
+other languages such as C++.</p>
+
+<p>PVData is distributed as a eclipse Java Project named pvData. This project
+consists of the following java packages:</p>
+
+<h3 id="L236">{@link org.epics.pvData.pv}</h3>
+
+<p>The Java enum, interface, and class definitions that define PVData. This
+section provides a complete definition of what PVData is. This package
+completely describes how PVData is accessed.</p>
+
+<h3 id="L240">{@link org.epics.pvData.factory}</h3>
+
+<p>Java Facilities for creating a PV Database and PVData. It provides
+everything required for creating PVData. It provides the following
+factories:</p>
+<dl>
+  <dt>FieldFactory</dt>
+    <dd>Creates introspection interfaces.</dd>
+  <dt>PVDataFactory</dt>
+    <dd>Creates data interfaces for all of the supported data types.</dd>
+  <dt>PVDatabaseFactory</dt>
+    <dd>Creates and manages PVData databases. A database contains memory
+      resident structures and records. Structures make it easy to create
+      structure fields with pre-defined fields. </dd>
+  <dt>ConvertFactory</dt>
+    <dd>Converts between support data types.</dd>
+  <dt>PVReplaceFactory</dt>
+    <dd>Finds all fields within each record of a database that have an
+      associated factory that implements a replacement for the default
+      implementation for the field.</dd>
+</dl>
+
+<p>Although PVDataFactory can provide the implementation for all supported
+data types, often it is desirable to provide other implementations. To make
+it easy to create alternate implementations a set of abstract and base
+classes are supplied.</p>
+
+<h3 id="L272">{@link org.epics.pvData.property}</h3>
+
+<p>Provides a way to associated properties with a field. </p>
+
+<p>The basic idea is to associate properties with any field named "value".
+All the fields in the structure that contains the value field are considered
+properties of value with the field name being the property name. See that
+package overview for details.</p>
+
+<p>This package also provides support for "well known" field definitions like
+timeStamp, alarm, display,etc. Code that uses PVData can be simplified by
+using this support.</p>
+
+<h3 id="L280">{@link org.epics.pvData.xml}</h3>
+
+<p>One way to create a PV database is via an xml parser. This package defines
+the syntax and provides a parser.</p>
+
+<h3 id="L284">{@link org.epics.pvData.misc}</h3>
+
+<p>This package provides support that is used by pvData factories and might
+also be useful to software that uses PVData.</p>
+
+<h3 id="L288">{@link org.epics.pvData.test}</h3>
+
+<p>Test code.</p>
+
+<h3 id="L292">{@link org.epics.pvData.pvCopy}</h3>
+
+<p>This package provides support implementing a structure that hold data from
+an arbitrary subset of the fields in a record. It is designed for use by
+channel access.</p>
+
+<h3 id="L296">{@link org.epics.pvData.monitor}</h3>
+
+<p>This defines interfaces for monitors and a complete implementation of
+monitors for a pvData database. The implementation is used by CAJv4 to
+implement the server side of monitor support.</p>
+
+<h2 style="text-align: center" id="License">License Agreement</h2>
+<pre>Copyright (c) 2008 Martin R. Kraimer
+Copyright (c) 2006 The University of Chicago, as Operator of Argonne
+     National Laboratory.
+Copyright (c) 2006 Deutsches Elektronen-Synchroton,
+     Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY.
+Copyright (c) 2007 Control System Laboratory,
+    (COSYLAB) Ljubljana Slovenia
+
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+________________________________________________________________________
+
+This software is in part copyrighted by the University of Chicago (UofC)
+
+In no event shall UofC be liable to any party for direct, indirect,
+special, incidental, or consequential damages arising out of the use of
+this software, its documentation, or any derivatives thereof, even if
+UofC has been advised of the possibility of such damage.
+
+UofC specifically disclaims any warranties, including, but not limited
+to, the implied warranties of merchantability, fitness for a particular
+purpose, and non-infringement.  This software is provided on an "as is"
+basis, and UofC has no obligation to provide maintenance, support,
+updates, enhancements, or modifications.
+
+________________________________________________________________________
+
+This software is in part copyrighted by the BERLINER SPEICHERRING
+GESELLSCHAFT FUER SYNCHROTRONSTRAHLUNG M.B.H. (BESSY), BERLIN, GERMANY.
+
+In no event shall BESSY be liable to any party for direct, indirect,
+special, incidental, or consequential damages arising out of the use of
+this software, its documentation, or any derivatives thereof, even if
+BESSY has been advised of the possibility of such damage.
+
+BESSY specifically disclaims any warranties, including, but not limited
+to, the implied warranties of merchantability, fitness for a particular
+purpose, and non-infringement.  This software is provided on an "as is"
+basis, and BESSY has no obligation to provide maintenance, support,
+updates, enhancements, or modifications.
+
+________________________________________________________________________
+
+This software is in part copyrighted by the Deutsches Elektronen-Synchroton,
+    Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY.
+
+In no event shall DESY be liable to any party for direct, indirect,
+special, incidental, or consequential damages arising out of the use of
+this software, its documentation, or any derivatives thereof, even if
+DESY has been advised of the possibility of such damage.
+
+DESY specifically disclaims any warranties, including, but not limited
+to, the implied warranties of merchantability, fitness for a particular
+purpose, and non-infringement.  This software is provided on an "as is"
+basis, and DESY has no obligation to provide maintenance, support,
+updates, enhancements, or modifications.
+________________________________________________________________________</pre>
+</body>
+</html>
