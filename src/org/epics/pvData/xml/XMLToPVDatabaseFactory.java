@@ -84,7 +84,12 @@ public class XMLToPVDatabaseFactory {
             XMLToPVDatabaseFactory.isListener = isListener;
             XMLToPVDatabaseFactory.pvListener = pvListener;
             IncludeSubstituteXMLListener listener = new Listener();
-            iocxmlReader.parse("database",fileName,requester,reportSubstitutionFailure,listener,detailsListener);
+            try {
+                iocxmlReader.parse("database",fileName,requester,reportSubstitutionFailure,listener,detailsListener);
+            } catch (RuntimeException e) {
+            	iocxmlReader.message("iocxmlReader.parse" + e.getMessage(),MessageType.error);
+            	e.printStackTrace();
+            }
         } finally {
             isInUse.set(false);
         }
