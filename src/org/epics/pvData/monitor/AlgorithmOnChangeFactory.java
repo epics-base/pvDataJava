@@ -10,6 +10,7 @@ import org.epics.pvData.factory.ConvertFactory;
 import org.epics.pvData.factory.PVDataFactory;
 import org.epics.pvData.pv.Convert;
 import org.epics.pvData.pv.MessageType;
+import org.epics.pvData.pv.PVBoolean;
 import org.epics.pvData.pv.PVDataCreate;
 import org.epics.pvData.pv.PVField;
 import org.epics.pvData.pv.PVRecord;
@@ -56,9 +57,14 @@ public class AlgorithmOnChangeFactory {
 			}
 			boolean causeMonitor = true;
 			PVField pvField = pvOptions.getSubField("causeMonitor");
-			if(pvField!=null && (pvField instanceof PVString)) {
-				PVString pvString = (PVString)pvField;
-				if(pvString.get().equals("false")) causeMonitor = false;
+			if(pvField!=null) {
+				if(pvField instanceof PVString) {
+					PVString pvString = (PVString)pvField;
+					if(pvString.get().equals("false")) causeMonitor = false;
+				} else if(pvField instanceof PVBoolean) {
+					PVBoolean pvBoolean = (PVBoolean)pvField;
+					causeMonitor = pvBoolean.get();
+				}
 			}
 			return new MonitorAlgorithmImpl(fromPVRecord,causeMonitor);
 		}
