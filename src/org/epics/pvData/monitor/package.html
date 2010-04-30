@@ -10,7 +10,7 @@
 <body>
 <h1 style="text-align: center">EPICS pvData: monitor<br />
 package: org.epics.pvData.monitor<br />
-2010.03.22</h1>
+2010.04.29</h1>
 CONTENTS 
 
 <div class="toc">
@@ -55,9 +55,9 @@ this package are: onPut, onChange, and deadband. The set of algorithms is
 extensible. Code that implements an algorithm must implement two interfaces
 and register itself to MonitorFactory.</p>
 
-<p>The implementation uses PVCopy and PVCopyMonitor which are implemented in
+<p>The iimplementation uses PVCopy and PVCopyMonitor which are implemented in
 package org.epics.pvData.pvCopy. When PVCopyMonitor tells monitor that
-changes have occured, monitor applys the appropriate algorithm to each
+changes have occurred, monitor applies the appropriate algorithm to each
 changed field and if any algorithm says to raise a monitor a monitor is sent
 to the client.</p>
 
@@ -89,23 +89,25 @@ for monitors has code like the following:</p>
 </ol>
 
 <p>Developers who need to understand or implement monitor algorithms will be
-interested in this package. For example it is used by CAJV4 to implement
+interested in this package. For example it is used by pvccess to implement
 monitors. The interfaces can be implemented by other servers, for example the
-CAJV3 client implements a version of interface Monitor that links to a
-version 3 EPICS IOC.</p>
+javaIOC (org.epics.ioc.caV3) implements a version of interface Monitor that
+links to a version 3 EPICS IOC.</p>
 
 <p>This package implements support for the following monitor algorithms:</p>
 <dl>
   <dt>onPut</dt>
     <dd>A monitor is issued whenever a put is issued to the field. This is
-      the default unless the record defines deadbands for a field.</dd>
+      the default unless the record defines deadbands for a field. An
+      exception is the top level timeStamp which by default is made onChange
+      and monitor will not be raised.</dd>
   <dt>onChange</dt>
     <dd>This provides two options: 1) A monitor is raised whenever a field
       changes value, and 2) A monitor will never be raised for the field.</dd>
   <dt>deadband</dt>
     <dd>The field must be a numeric scalar. Whenever the absolute or
-      percventage value of the field changes by more than a deadband a
-      monitor is issued. The record instance can also define deadbands.</dd>
+      percentage value of the field changes by more than a deadband a monitor
+      is issued. The record instance can also define deadbands.</dd>
   <dt>periodic</dt>
     <dd>The request structure must define a field named value and that field
       must be a numeric scalar. Whenever the absolute value of the field
@@ -117,14 +119,14 @@ support for the following queue sizes.</p>
 <dl>
   <dt>1</dt>
     <dd>No queue is kept but only modified data is sent to the client. The
-      data may often change multiple times between times that the client
-      receivers data but for applications like display managers this is what
-      is wanted. If a field is updated multiple time before the client polls
-      the overflow bit is set for the field.</dd>
+      data may change multiple times between times that the client receivers
+      data but for applications like display managers this is OK. If a field
+      is updated multiple time before the client polls the overflow bit is
+      set for the field.</dd>
   <dt>&gt;=2</dt>
     <dd>A MonitiorQueue is used. Since a monitor queue has a fixed size over
       runs can still occur but are less likely. The client receives notice of
-      any overflows.</dd>
+      any overflows. </dd>
 </dl>
 <hr />
 
@@ -155,16 +157,17 @@ options.</p>
 <p>The following options are supported for all fields:</p>
 <dl>
   <dt><span style="font-family: Courier">shareData</span></dt>
-    <dd>Should the server just transfer data from the record itself rather
-      than keeping a copy. This option can save memory for array fields. Note
-      that it is implemented by PVCopy.</dd>
+    <dd>Has a value of true or false and specifies if the server just
+      transfer data from the record keep a copy. This option can save memory
+      for array fields. Note that it is implemented by PVCopy.</dd>
 </dl>
 
 <p>For each field the following monitor algorithms are supported:</p>
 <dl>
   <dt><span style="font-family: Courier">onPut</span></dt>
     <dd>A monitor is issued when a put is issued to the field. This is the
-      default if no algorithm is specified.</dd>
+      default if no algorithm is specified and the field is not the top level
+      timeStamp.</dd>
   <dt><span style="font-family: Courier">onChange</span></dt>
     <dd>This has two features depending on the value of causeMonitor. If
       causeMomitor is true (the default) then a monitor is raised only if the
@@ -198,8 +201,8 @@ options.</p>
 <pre>    fullRecordName</pre>
 
 <p>Where fullRecordName is the full name of the field in the record. The name
-in the structure the client will get id the actual field name from the
-record. Or fieldDef has the form:</p>
+in the structure the client will get is the field name from the record. Or
+fieldDef has the form:</p>
 <pre>    fieldName{fieldDef,...}
     </pre>
 
