@@ -226,6 +226,13 @@ public class BasePVRecord implements PVRecord {
 		}
 	}
 	/* (non-Javadoc)
+	 * @see org.epics.pvData.pv.PVRecord#getNumberClients()
+	 */
+	@Override
+	public int getNumberClients() {
+		return clientList.getLength();
+	}
+	/* (non-Javadoc)
      * @see org.epics.pvData.factory.BasePVStructure#toString()
      */
     public String toString() { return toString(0);}

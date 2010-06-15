@@ -100,4 +100,9 @@ public interface PVRecord {
      * Detach all registered clients.
      */
     void detachClients();
+    /**
+     * Get the number of registerd clients.
+     * @return The number.
+     */
+    int getNumberClients();
 }
