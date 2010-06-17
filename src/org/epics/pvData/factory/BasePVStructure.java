@@ -1,0 +1,666 @@
+/**
+ * Copyright - See the COPYRIGHT that is included with this distribution.
+ * EPICS JavaIOC is distributed subject to a Software License Agreement found
+ * in file LICENSE that is included with this distribution.
+ */
+package org.epics.pvData.factory;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
+import org.epics.pvData.misc.BitSet;
+import org.epics.pvData.pv.Array;
+import org.epics.pvData.pv.Convert;
+import org.epics.pvData.pv.DeserializableControl;
+import org.epics.pvData.pv.Field;
+import org.epics.pvData.pv.MessageType;
+import org.epics.pvData.pv.PVArray;
+import org.epics.pvData.pv.PVBoolean;
+import org.epics.pvData.pv.PVByte;
+import org.epics.pvData.pv.PVDataCreate;
+import org.epics.pvData.pv.PVDouble;
+import org.epics.pvData.pv.PVField;
+import org.epics.pvData.pv.PVFloat;
+import org.epics.pvData.pv.PVInt;
+import org.epics.pvData.pv.PVLong;
+import org.epics.pvData.pv.PVRecord;
+import org.epics.pvData.pv.PVShort;
+import org.epics.pvData.pv.PVString;
+import org.epics.pvData.pv.PVStructure;
+import org.epics.pvData.pv.PVStructureArray;
+import org.epics.pvData.pv.PVStructureScalar;
+import org.epics.pvData.pv.Scalar;
+import org.epics.pvData.pv.ScalarType;
+import org.epics.pvData.pv.SerializableControl;
+import org.epics.pvData.pv.Structure;
+import org.epics.pvData.pv.StructureArray;
+import org.epics.pvData.pv.StructureScalar;
+import org.epics.pvData.pv.Type;
+
+/**
+ * Base class for a PVStructure.
+ * @author mrk
+ *
+ */
+public class BasePVStructure extends AbstractPVField implements PVStructure
+{
+    private static Convert convert = ConvertFactory.getConvert();
+    private static PVDataCreate pvDataCreate = PVDataFactory.getPVDataCreate();
+    private PVField[] pvFields;
+    private String extendsStructureName = null;
+    
+    /**
+     * Constructor.
+     * @param parent The parent interface.
+     * @param structure the reflection interface for the PVStructure data.
+     */
+    public BasePVStructure(PVStructure parent, Structure structure) {
+        super(parent,structure);
+        constructorCommon(parent,structure);
+    }
+    /**
+     * Embed this PVStructure in a PVRecord.
+     * @param pvRecord
+     */
+    public void embedInRecord(PVRecord pvRecord) {
+    	if(super.getParent()!=null) {
+    		throw new IllegalStateException("can only embed a top level strucure");
+    	}
+    	setRecord(pvRecord);
+    }
+    
+    private void constructorCommon(PVStructure parent,Structure structure)
+    {
+    	Field[] fields = structure.getFields();
+        pvFields = new PVField[fields.length];
+        for(int i=0; i < pvFields.length; i++) {
+        	Field field = fields[i];
+        	switch(field.getType()) {
+        	case scalar: {
+        		Scalar scalar = (Scalar)field;
+        		if(scalar.getScalarType()==ScalarType.pvStructure) {
+                    pvFields[i] = pvDataCreate.createPVStructureScalar(this,(StructureScalar)scalar);
+        		} else {
+        			pvFields[i] = pvDataCreate.createPVScalar(this,field.getFieldName(),scalar.getScalarType());
+        		}
+        		break;
+        	}
+        	case scalarArray: {
+        		Array array = (Array)field;
+        		ScalarType elementType = array.getElementType();
+        		if(elementType==ScalarType.pvStructure) {
+        			pvFields[i] = pvDataCreate.createPVStructureArray(this, ((StructureArray)array));
+        		} else {
+        		    pvFields[i] = pvDataCreate.createPVArray(this,field.getFieldName(),elementType);
+        		}
+        		break;
+        	}
+        	case structure: {
+        		Structure struct = (Structure)field;
+        		pvFields[i] = pvDataCreate.createPVStructure(this, field.getFieldName(), struct.getFields());
+        	}
+        	}
+        }
+    }
+    
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getSubField(java.lang.String)
+     */
+    @Override
+    public PVField getSubField(String fieldName) {
+        return findSubField(fieldName,this);
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getSubField(int)
+     */
+    @Override
+    public PVField getSubField(int fieldOffset) {
+        if(fieldOffset<=super.getFieldOffset()) {
+            if(fieldOffset==super.getFieldOffset()) return this;
+            return null;
+        }
+        if(fieldOffset>super.getNextFieldOffset()) return null;
+        for(PVField pvField: pvFields) {
+            if(pvField.getFieldOffset()==fieldOffset) return pvField;
+            if(pvField.getNextFieldOffset()<=fieldOffset) continue;
+            if(pvField.getField().getType()==Type.structure) {
+                return ((PVStructure)pvField).getSubField(fieldOffset);
+            }
+        }
+        throw new IllegalStateException("PVStructure.getSubField: Logic error");
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getStructure()
+     */
+    @Override
+    public Structure getStructure() {
+        return (Structure)getField();
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#appendPVField(org.epics.pvData.pv.PVField, boolean)
+     */
+    @Override
+    public void appendPVField(PVField pvField) {
+        int origLength = pvFields.length;
+        PVField[] newPVFields = new PVField[origLength + 1];
+        for(int i=0; i<origLength; i++) {
+            newPVFields[i] = pvFields[i];
+        }
+        newPVFields[newPVFields.length-1] = pvField;
+        pvFields = newPVFields;
+        super.replaceStructure();
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#appendPVFields(org.epics.pvData.pv.PVField[], boolean)
+     */
+    @Override
+	public void appendPVFields(PVField[] pvFields) {
+		if(this.pvFields.length==0) {
+			this.pvFields = pvFields;
+		} else {
+			int original = this.pvFields.length;
+			int additional = pvFields.length;
+			int length = original + additional;
+			PVField[] newPVFields = new PVField[length];
+	        for(int i=0; i<original; i++) {
+	            newPVFields[i] = this.pvFields[i];
+	        }
+	        for(int i=0; i<additional; i++) {
+	        	newPVFields[original +i] = pvFields[i];
+	        }
+		}
+		super.replaceStructure();
+	}
+	/* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#removePVField(java.lang.String)
+     */
+    @Override
+    public void removePVField(String fieldName) {
+        PVField pvField = getSubField(fieldName);
+        if(pvField==null) {
+            super.message("removePVField " + fieldName + " does not exist", MessageType.error);
+            return;
+        }
+        int origLength = pvFields.length;
+        PVField[] newPVFields = new PVField[origLength - 1];
+        int newIndex = 0;
+        for(int i=0; i<origLength; i++) {
+            if(pvFields[i]==pvField) continue;
+            newPVFields[newIndex++] = pvFields[i];
+        }
+        pvFields = newPVFields;
+        replaceStructure();
+        //updateInternal();
+    }
+	/* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getPVFields()
+     */
+    @Override
+    public PVField[] getPVFields() {
+        return pvFields;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getBooleanField(java.lang.String)
+     */
+    @Override
+    public PVBoolean getBooleanField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvBoolean) {
+                return (PVBoolean)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type boolean ",
+                MessageType.error);
+        return null;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getByteField(java.lang.String)
+     */
+    @Override
+    public PVByte getByteField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvByte) {
+                return (PVByte)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type byte ",
+                MessageType.error);
+        return null;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getShortField(java.lang.String)
+     */
+    @Override
+    public PVShort getShortField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvShort) {
+                return (PVShort)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type short ",
+                MessageType.error);
+        return null;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getIntField(java.lang.String)
+     */
+    @Override
+    public PVInt getIntField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvInt) {
+                return (PVInt)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type int ",
+                MessageType.error);
+        return null;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getLongField(java.lang.String)
+     */
+    @Override
+    public PVLong getLongField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvLong) {
+                return (PVLong)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type long ",
+                MessageType.error);
+        return null;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getFloatField(java.lang.String)
+     */
+    @Override
+    public PVFloat getFloatField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvFloat) {
+                return (PVFloat)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type float ",
+                MessageType.error);
+        return null;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getDoubleField(java.lang.String)
+     */
+    @Override
+    public PVDouble getDoubleField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvDouble) {
+                return (PVDouble)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type double ",
+                MessageType.error);
+        return null;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getStringField(java.lang.String)
+     */
+    @Override
+    public PVString getStringField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+            super.message("fieldName " + fieldName + " does not exist ",
+                    MessageType.error);
+            return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvString) {
+                return (PVString)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type string ",
+                MessageType.error);
+        return null;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getStructureScalarField(java.lang.String)
+     */
+    @Override
+	public PVStructureScalar getStructureScalarField(String fieldName) {
+    	PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+            super.message("fieldName " + fieldName + " does not exist ",
+                    MessageType.error);
+            return null;
+        }
+        if(pvField.getField().getType()==Type.scalar) {
+            Scalar scalar = (Scalar)pvField.getField();
+            if(scalar.getScalarType()==ScalarType.pvStructure) {
+                return (PVStructureScalar)pvField;
+            }
+        }
+        super.message("fieldName " + fieldName + " does not have type structurte ",
+                MessageType.error);
+        return null;
+	}
+
+	/* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getStructureField(java.lang.String)
+     */
+    @Override
+    public PVStructure getStructureField(String fieldName) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        Field field = pvField.getField();
+        Type type = field.getType();
+        if(type!=Type.structure) {
+            super.message(
+                "fieldName " + fieldName + " does not have type structure ",
+                MessageType.error);
+            return null;
+        }
+        return (PVStructure)pvField;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getArrayField(java.lang.String, org.epics.pvData.pv.ScalarType)
+     */
+    @Override
+    public PVArray getArrayField(String fieldName, ScalarType elementType) {
+        PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        Field field = pvField.getField();
+        Type type = field.getType();
+        if(type!=Type.scalarArray) {
+            super.message(
+                "fieldName " + fieldName + " does not have type array ",
+                MessageType.error);
+            return null;
+        }
+        Array array = (Array)field;
+        if(array.getElementType()!=elementType) {
+            super.message(
+                    "fieldName "
+                    + fieldName + " is array but does not have elementType " + elementType.toString(),
+                    MessageType.error);
+                return null;
+        }
+        return (PVArray)pvField;
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getStructureArrayField(java.lang.String)
+     */
+    @Override
+	public PVStructureArray getStructureArrayField(String fieldName) {
+    	PVField pvField = findSubField(fieldName,this);
+        if(pvField==null) {
+        	super.message("fieldName " + fieldName + " does not exist",MessageType.error);
+        	return null;
+        }
+        Field field = pvField.getField();
+        Type type = field.getType();
+        if(type!=Type.scalarArray) {
+            super.message(
+                "fieldName " + fieldName + " does not have type array ",
+                MessageType.error);
+            return null;
+        }
+        Array array = (Array)field;
+        if(array.getElementType()!=ScalarType.pvStructure) {
+            super.message(
+                    "fieldName "
+                    + fieldName + " is array but does not have elementType structure ",
+                    MessageType.error);
+                return null;
+        }
+        return (PVStructureArray)pvField;
+	}
+
+	/* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#getExtendStructure()
+     */
+    public String getExtendsStructureName() {
+        return extendsStructureName;
+    }
+    @Override
+    /* (non-Javadoc)
+     * @see org.epics.pvData.pv.PVStructure#putExtendStructure(org.epics.pvData.pv.PVStructure)
+     */
+    public boolean putExtendsStructureName(String extendsStructureName) {
+        if(extendsStructureName==null || this.extendsStructureName!=null) return false;
+        this.extendsStructureName = extendsStructureName;
+        return true;
+    }
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        String prefix = "structure " + super.getField().getFieldName();
+        return toString(prefix,0);
+    }
+    /* (non-Javadoc)
+     * @see org.epics.pvData.factory.AbstractPVField#toString(int)
+     */
+    @Override
+    public String toString(int indentLevel) {
+        return toString("structure",indentLevel);
+    }       
+    /**
+     * Called by BasePVRecord.
+     * @param prefix A prefix for the generated string.
+     * @param indentLevel The indentation level.
+     * @return String showing the PVStructure.
+     */
+    protected String toString(String prefix,int indentLevel) {
+        return getString(prefix,indentLevel);
+    }
+    
+    private PVField findSubField(String fieldName,PVStructure pvStructure) {
+        if(fieldName==null || fieldName.length()<1) return null;
+        int index = fieldName.indexOf('.');
+        String name = fieldName;
+        String restOfName = null;
+        if(index>0) {
+            name = fieldName.substring(0, index);
+            if(fieldName.length()>index) {
+                restOfName = fieldName.substring(index+1);
+            }
+        }
+        PVField[] pvFields = pvStructure.getPVFields();
+        PVField pvField = null;
+        for(PVField pvf : pvFields) {
+            if(pvf.getField().getFieldName().equals(name)) {
+                pvField = pvf;
+                break;
+            }
+        }
+        if(pvField==null) return null;
+        if(restOfName==null) return pvField;
+        if(pvField.getField().getType()!=Type.structure) return null;
+        return findSubField(restOfName,(PVStructure)pvField);
+    }
+    private String getString(String prefix,int indentLevel) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(prefix);
+        builder.append(super.toString(indentLevel));
+        if(extendsStructureName!=null) {
+            builder.append(" extends ");
+            builder.append(extendsStructureName);
+        }
+        convert.newLine(builder,indentLevel);
+        builder.append("{");
+        for(int i=0, n= pvFields.length; i < n; i++) {
+            convert.newLine(builder,indentLevel + 1);
+            Field field = pvFields[i].getField();
+            builder.append(field.getFieldName() + " = ");
+            builder.append(pvFields[i].toString(indentLevel + 1));            
+        }
+        convert.newLine(builder,indentLevel);
+        builder.append("}");
+        return builder.toString();
+    }
+    
+	/* (non-Javadoc)
+	 * @see org.epics.pvData.pv.Serializable#serialize(java.nio.ByteBuffer, org.epics.pvData.pv.SerializableControl)
+	 */
+	public void serialize(ByteBuffer buffer, SerializableControl flusher) {
+        for (int i = 0; i < pvFields.length; i++)
+        	pvFields[i].serialize(buffer, flusher);
+	}
+	/* (non-Javadoc)
+	 * @see org.epics.pvData.pv.Serializable#deserialize(java.nio.ByteBuffer, org.epics.pvData.pv.DeserializableControl)
+	 */
+	public void deserialize(ByteBuffer buffer, DeserializableControl control) {
+        for (int i = 0; i < pvFields.length; i++)
+        	pvFields[i].deserialize(buffer, control);
+	}
+	/* (non-Javadoc)
+	 * @see org.epics.pvData.pvCopy.BitSetSerializable#deserialize(java.nio.ByteBuffer, org.epics.pvData.pv.DeserializableControl, org.epics.pvData.misc.BitSet)
+	 */
+	public void deserialize(ByteBuffer buffer, DeserializableControl control, BitSet bitSet) {
+        int offset = getFieldOffset();
+        int numberFields = getNumberFields();
+        int next = bitSet.nextSetBit(offset);
+        
+        // no more changes or no changes in this structure
+        if (next<0 || next>=offset+numberFields) return;
+
+        // entire structure
+        if(offset==next) {
+        	deserialize(buffer, control);
+        	return;
+        }
+        
+        for (int i = 0; i < pvFields.length; i++)
+        {
+        	final PVField pvField = pvFields[i];
+            offset = pvField.getFieldOffset();
+            numberFields = pvField.getNumberFields();
+            next = bitSet.nextSetBit(offset);
+            // no more changes
+            if (next<0) return;
+            //  no change in this pvField
+            if (next>=offset+numberFields) continue;
+            
+            // serialize field or fields
+            if (numberFields == 1)
+            	pvField.deserialize(buffer, control);
+            else
+            	((PVStructure)pvField).deserialize(buffer, control, bitSet);
+        }
+	}
+	/* (non-Javadoc)
+	 * @see org.epics.pvData.pvCopy.BitSetSerializable#serialize(java.nio.ByteBuffer, org.epics.pvData.pv.SerializableControl, org.epics.pvData.misc.BitSet)
+	 */
+	public void serialize(ByteBuffer buffer, SerializableControl flusher, BitSet bitSet) {
+        int offset = getFieldOffset();
+        int numberFields = getNumberFields();
+        int next = bitSet.nextSetBit(offset);
+        
+        // no more changes or no changes in this structure
+        if (next<0 || next>=offset+numberFields) return;
+
+        // entire structure
+        if(offset==next) {
+        	serialize(buffer, flusher);
+        	return;
+        }
+        
+        for (int i = 0; i < pvFields.length; i++)
+        {
+        	final PVField pvField = pvFields[i];
+            offset = pvField.getFieldOffset();
+            numberFields = pvField.getNumberFields();
+            next = bitSet.nextSetBit(offset);
+            // no more changes
+            if (next<0) return;
+            //  no change in this pvField
+            if (next>=offset+numberFields) continue;
+            
+            // serialize field or fields
+            if (numberFields == 1)
+            	pvField.serialize(buffer, flusher);
+            else
+            	((PVStructure)pvField).serialize(buffer, flusher, bitSet);
+        }
+	}
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		// TODO anything else?
+		if (obj instanceof PVStructure) {
+			PVStructure b = (PVStructure)obj;
+			final PVField[] bfields = b.getPVFields(); 
+			if (bfields.length == pvFields.length)
+			{
+		        for (int i = 0; i < pvFields.length; i++)
+		        	if (!pvFields[i].equals(bfields[i]))
+		        		return false;
+		        
+		        return true;
+			}
+			else
+				return false;
+		}
+		else
+			return false;
+	}
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((extendsStructureName == null) ? 0 : extendsStructureName.hashCode());
+		result = prime * result + Arrays.hashCode(pvFields);
+		return result;
+	}
+}

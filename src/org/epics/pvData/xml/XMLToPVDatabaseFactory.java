@@ -489,7 +489,6 @@ public class XMLToPVDatabaseFactory {
         
         private void endRecord(String name)
         {
-            
             PVRecord pvRecord = structureState.pvRecord;
             PVStructure pvStructure = structureState.pvStructure;
             if(pvRecord==null) {
