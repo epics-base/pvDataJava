@@ -5,7 +5,7 @@
 
     <groupId>org.epics</groupId>
     <artifactId>pvDataJava</artifactId>
-    <version>4.0.2</version>
+    <version>4.0.3</version>
     <packaging>jar</packaging>
 
     <name>pvData - Java</name>
@@ -64,6 +64,11 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>org.epics.pvdata</Bundle-SymbolicName>
+                    </instructions>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
