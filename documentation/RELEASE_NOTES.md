@@ -1,7 +1,20 @@
-Release 5.0
-===========
+Release 5.0.3
+=============
 
-The main changes since release 4.0 are:
+The only change since release 5.0.2 is:
+
+Fixed buffer overflow in PVUnion.serialize() (issue #5)
+-------------------------------------------------------
+
+A PVUnion whose stored value was null was serialized without checking 
+whether the buffer had sufficient capacity. This has been fixed by calling
+ensureBuffer().
+
+
+Release 5.0.2
+=============
+
+The main changes since release 4.0.2 are:
 
 * New template versions of Structure::getField
 * Printing of structure and union arrays modified
@@ -35,7 +48,7 @@ The string representation of a structure array has been changed from:
 to
 
     structure[] structureArrayField
-        structure[]
+        structure
             long secondsPastEpoch
             int nanoseconds
 
@@ -62,8 +75,8 @@ The fields in the PVDisplayFactory class have been changed from public to
 private.
 
 
-Release 4.0
-===========
+Release 4.0.2
+=============
 
 The main changes since release 3.0.2 are:
 
