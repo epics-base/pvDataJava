@@ -63,7 +63,14 @@
                         </goals>
                     </execution>
                 </executions>
+                <!-- Use lower case for bundle name, as agreed upon with CS-Studio devs -->
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>org.epics.pvdata</Bundle-SymbolicName>
+                    </instructions>
+                </configuration>
             </plugin>
+
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.5</version>
