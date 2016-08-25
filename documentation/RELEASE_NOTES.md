@@ -1,3 +1,58 @@
+Release 6.0.1
+=============
+
+The main changes since 6.0.0 are:
+
+* Fixed issue with PVStructure's equals() method
+* Unit tests for equality of Structures/PVStructures added
+
+Fixed issue with PVStructure's equals() method
+----------------------------------------------
+
+equals() was returning true if two structures had the same number of fields,
+of equal type and equal value data, even if type IDs or field names were not
+equal - see #10. Fixed this by checking introspection type.
+
+This brings Java behaviour in line with C++.
+
+Note: Exact meaning of equality of (PV)Fields is  unclear/undefined. In particular two scalar or scalar array PVFields are currently "equal" if
+their values are equal, irrespective of their field names.
+
+
+Release 6.0.0
+=============
+
+The main changes since release 5.0.3 are:
+
+* License and copyright has changed
+* PVAuxInfo has been removed
+* Field name validation has been added
+* Fixed truncation in BitSet::or_and
+* Extra postPut() in ConvertFactory.copyScalar array removed
+
+Fixed truncation in BitSet::or_and (issue #27)
+----------------------------------------------
+
+If n, n1 and n2 words are used to store the values of the bitsets bitset,
+bitset1 and bitset2 respectively then max(n, min(n1,n2)) words are needed
+to store bitset.or_(bitset1, bitset2).
+
+Previously min(n1,n2) words were used and the result would be truncated in
+some instances. This has been fixed.
+
+Analogous to issue #27 in pvDataCPP
+
+Field name validation has been added
+------------------------------------
+
+Field name validation is performed when contructing Structures or Unions.
+
+Field names must now consist of upper or lower case letters, numbers and
+underscores with an initial number forbidden, i.e. they must match the pattern
+[_a-zA-Z][_a-zA-Z0-9]*
+
+An illegal name throws an IllegalArgumentException.
+
 Release 5.0
 ===========
 
