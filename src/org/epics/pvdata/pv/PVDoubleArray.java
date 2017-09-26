@@ -15,7 +15,7 @@ import org.epics.util.array.ListNumber;
  * @author mrk
  *
  */
-public interface PVDoubleArray extends PVScalarArray{
+public interface PVDoubleArray extends PVNumberArray{
     /**
      * Get values from a <i>PVDoubleArray</i>
      * and put them into <i>double[]to</i>
@@ -38,6 +38,7 @@ public interface PVDoubleArray extends PVScalarArray{
      * 
      * @return an unmodifiable view of the data
      */
+    @Override
     ArrayDouble get();
 
     /**
@@ -53,14 +54,6 @@ public interface PVDoubleArray extends PVScalarArray{
      * @throws IllegalStateException if the field is not mutable
      */
     int put(int offset,int length, double[] from, int fromOffset);
-    
-    /**
-     * Puts the new value contained in the list starting from the offset.
-     * 
-     * @param offset the first element to be changed
-     * @param list the values to be copied
-     */
-    void put(int offset, ListNumber list);
 
     /**
      * Share the data from caller.
