@@ -4,6 +4,9 @@
  */
 package org.epics.pvdata.pv;
 
+import org.epics.util.array.ArrayDouble;
+import org.epics.util.array.ListNumber;
+
 /**
  * Get/put a double array.
  * The caller must be prepared to get/put the array in chunks.
@@ -29,6 +32,13 @@ public interface PVDoubleArray extends PVScalarArray{
      * array.
      */
     int get(int offset, int length, DoubleArrayData data);
+    
+    /**
+     * Returns an unmodifiable view of the data.
+     * 
+     * @return an unmodifiable view of the data
+     */
+    ArrayDouble get();
 
     /**
      * Put values into a <i>PVDoubleArray</i> from <i>double[]from</i>
@@ -43,6 +53,14 @@ public interface PVDoubleArray extends PVScalarArray{
      * @throws IllegalStateException if the field is not mutable
      */
     int put(int offset,int length, double[] from, int fromOffset);
+    
+    /**
+     * Puts the new value contained in the list starting from the offset.
+     * 
+     * @param offset the first element to be changed
+     * @param list the values to be copied
+     */
+    void put(int offset, ListNumber list);
 
     /**
      * Share the data from caller.
