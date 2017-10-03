@@ -16,6 +16,10 @@ import org.epics.pvdata.pv.PVIntArray;
 import org.epics.pvdata.pv.PVLongArray;
 import org.epics.pvdata.pv.PVNumberArray;
 import org.epics.pvdata.pv.PVShortArray;
+import org.epics.pvdata.pv.PVUByteArray;
+import org.epics.pvdata.pv.PVUIntArray;
+import org.epics.pvdata.pv.PVULongArray;
+import org.epics.pvdata.pv.PVUShortArray;
 import org.epics.pvdata.pv.ScalarType;
 import org.epics.util.array.ArrayByte;
 import org.epics.util.array.ArrayDouble;
@@ -23,6 +27,10 @@ import org.epics.util.array.ArrayFloat;
 import org.epics.util.array.ArrayInt;
 import org.epics.util.array.ArrayLong;
 import org.epics.util.array.ArrayShort;
+import org.epics.util.array.ArrayUByte;
+import org.epics.util.array.ArrayUInt;
+import org.epics.util.array.ArrayULong;
+import org.epics.util.array.ArrayUShort;
 import org.epics.util.array.CollectionNumbers;
 import org.epics.util.array.ListNumber;
 import static org.junit.Assert.*;
@@ -60,6 +68,16 @@ public class NumericArrayTest extends TestCase {
         assertThat(pvArray.get(), equalTo(CollectionNumbers.toListLong(0,1,3,2,4,5,6,7,8,9)));
     }
 
+    public void testPutULongArray1() {
+        PVDataCreate factory = PVDataFactory.getPVDataCreate();
+        PVULongArray pvArray = (PVULongArray) factory.createPVScalarArray(ScalarType.pvULong);
+        assertThat(pvArray.get(), instanceOf(ArrayULong.class));
+        pvArray.put(0, CollectionNumbers.toListULong(0,1,2,3,4,5,6,7,8,9));
+        assertThat(pvArray.get(), equalTo(CollectionNumbers.toListULong(0,1,2,3,4,5,6,7,8,9)));
+        pvArray.put(2, CollectionNumbers.toListInt(3,2));
+        assertThat(pvArray.get(), equalTo(CollectionNumbers.toListULong(0,1,3,2,4,5,6,7,8,9)));
+    }
+
     public void testPutIntArray1() {
         PVDataCreate factory = PVDataFactory.getPVDataCreate();
         PVIntArray pvArray = (PVIntArray) factory.createPVScalarArray(ScalarType.pvInt);
@@ -68,6 +86,16 @@ public class NumericArrayTest extends TestCase {
         assertThat(pvArray.get(), equalTo(CollectionNumbers.toListInt(0,1,2,3,4,5,6,7,8,9)));
         pvArray.put(2, CollectionNumbers.toListLong(3,2));
         assertThat(pvArray.get(), equalTo(CollectionNumbers.toListInt(0,1,3,2,4,5,6,7,8,9)));
+    }
+
+    public void testPutUIntArray1() {
+        PVDataCreate factory = PVDataFactory.getPVDataCreate();
+        PVUIntArray pvArray = (PVUIntArray) factory.createPVScalarArray(ScalarType.pvUInt);
+        assertThat(pvArray.get(), instanceOf(ArrayUInt.class));
+        pvArray.put(0, CollectionNumbers.toListUInt(0,1,2,3,4,5,6,7,8,9));
+        assertThat(pvArray.get(), equalTo(CollectionNumbers.toListUInt(0,1,2,3,4,5,6,7,8,9)));
+        pvArray.put(2, CollectionNumbers.toListLong(3,2));
+        assertThat(pvArray.get(), equalTo(CollectionNumbers.toListUInt(0,1,3,2,4,5,6,7,8,9)));
     }
 
     public void testPutShortArray1() {
@@ -80,6 +108,16 @@ public class NumericArrayTest extends TestCase {
         assertThat(pvArray.get(), equalTo(CollectionNumbers.toListShort(new short[] {0,1,3,2,4,5,6,7,8,9})));
     }
 
+    public void testPutUShortArray1() {
+        PVDataCreate factory = PVDataFactory.getPVDataCreate();
+        PVUShortArray pvArray = (PVUShortArray) factory.createPVScalarArray(ScalarType.pvUShort);
+        assertThat(pvArray.get(), instanceOf(ArrayUShort.class));
+        pvArray.put(0, CollectionNumbers.toListUShort(new short[] {0,1,2,3,4,5,6,7,8,9}));
+        assertThat(pvArray.get(), equalTo(CollectionNumbers.toListUShort(new short[] {0,1,2,3,4,5,6,7,8,9})));
+        pvArray.put(2, CollectionNumbers.toListInt(3,2));
+        assertThat(pvArray.get(), equalTo(CollectionNumbers.toListUShort(new short[] {0,1,3,2,4,5,6,7,8,9})));
+    }
+
     public void testPutByteArray1() {
         PVDataCreate factory = PVDataFactory.getPVDataCreate();
         PVByteArray pvArray = (PVByteArray) factory.createPVScalarArray(ScalarType.pvByte);
@@ -88,6 +126,16 @@ public class NumericArrayTest extends TestCase {
         assertThat(pvArray.get(), equalTo(CollectionNumbers.toListByte(new byte[] {0,1,2,3,4,5,6,7,8,9})));
         pvArray.put(2, CollectionNumbers.toListInt(3,2));
         assertThat(pvArray.get(), equalTo(CollectionNumbers.toListByte(new byte[] {0,1,3,2,4,5,6,7,8,9})));
+    }
+
+    public void testPutUByteArray1() {
+        PVDataCreate factory = PVDataFactory.getPVDataCreate();
+        PVUByteArray pvArray = (PVUByteArray) factory.createPVScalarArray(ScalarType.pvUByte);
+        assertThat(pvArray.get(), instanceOf(ArrayUByte.class));
+        pvArray.put(0, CollectionNumbers.toListUByte(new byte[] {0,1,2,3,4,5,6,7,8,9}));
+        assertThat(pvArray.get(), equalTo(CollectionNumbers.toListUByte(new byte[] {0,1,2,3,4,5,6,7,8,9})));
+        pvArray.put(2, CollectionNumbers.toListInt(3,2));
+        assertThat(pvArray.get(), equalTo(CollectionNumbers.toListUByte(new byte[] {0,1,3,2,4,5,6,7,8,9})));
     }
 
     public void testPutNumericArray1() {
