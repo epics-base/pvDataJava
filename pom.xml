@@ -5,11 +5,11 @@
     <parent>
         <groupId>org.epics</groupId>
         <artifactId>epics-parent</artifactId>
-        <version>7.0.0</version>
+        <version>7.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>epics-pvdata</artifactId>
-    <version>6.1.0</version>
+    <version>6.1.1-SNAPSHOT</version>
 
     <name>pvDataJava</name>
     <url>https://github.com/epics-base/pvDataJava</url>
@@ -41,6 +41,6 @@
     	<url>https://github.com/epics-base/pvDataJava</url>
     	<connection>scm:git:https://github.com/epics-base/pvDataJava</connection>
     	<developerConnection>scm:git:https://github.com/epics-base/pvDataJava</developerConnection>
-        <tag>6.1.0-rc1</tag>
+        <tag>HEAD</tag>
   </scm>
 </project>
