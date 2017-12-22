@@ -4,7 +4,6 @@
  */
 package org.epics.pvdata.pv;
 
-import org.epics.util.array.ArrayInt;
 import org.epics.util.array.ListNumber;
 
 /**

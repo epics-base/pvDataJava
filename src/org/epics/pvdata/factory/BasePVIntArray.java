@@ -12,7 +12,7 @@ import org.epics.pvdata.pv.IntArrayData;
 import org.epics.pvdata.pv.PVIntArray;
 import org.epics.pvdata.pv.ScalarArray;
 import org.epics.pvdata.pv.SerializableControl;
-import org.epics.util.array.ArrayInt;
+import org.epics.util.array.ArrayInteger;
 import org.epics.util.array.CollectionNumbers;
 
 
@@ -77,7 +77,7 @@ public class BasePVIntArray extends AbstractPVScalarArray implements PVIntArray
     }
 
     @Override
-    public ArrayInt get() {
+    public ArrayInteger get() {
         return CollectionNumbers.unmodifiableListInt(value);
     }
     

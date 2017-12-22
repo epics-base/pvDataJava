@@ -24,11 +24,11 @@ import org.epics.pvdata.pv.ScalarType;
 import org.epics.util.array.ArrayByte;
 import org.epics.util.array.ArrayDouble;
 import org.epics.util.array.ArrayFloat;
-import org.epics.util.array.ArrayInt;
+import org.epics.util.array.ArrayInteger;
 import org.epics.util.array.ArrayLong;
 import org.epics.util.array.ArrayShort;
 import org.epics.util.array.ArrayUByte;
-import org.epics.util.array.ArrayUInt;
+import org.epics.util.array.ArrayUInteger;
 import org.epics.util.array.ArrayULong;
 import org.epics.util.array.ArrayUShort;
 import org.epics.util.array.CollectionNumbers;
@@ -81,7 +81,7 @@ public class NumericArrayTest extends TestCase {
     public void testPutIntArray1() {
         PVDataCreate factory = PVDataFactory.getPVDataCreate();
         PVIntArray pvArray = (PVIntArray) factory.createPVScalarArray(ScalarType.pvInt);
-        assertThat(pvArray.get(), instanceOf(ArrayInt.class));
+        assertThat(pvArray.get(), instanceOf(ArrayInteger.class));
         pvArray.put(0, CollectionNumbers.toListInt(0,1,2,3,4,5,6,7,8,9));
         assertThat(pvArray.get(), equalTo(CollectionNumbers.toListInt(0,1,2,3,4,5,6,7,8,9)));
         pvArray.put(2, CollectionNumbers.toListLong(3,2));
@@ -91,7 +91,7 @@ public class NumericArrayTest extends TestCase {
     public void testPutUIntArray1() {
         PVDataCreate factory = PVDataFactory.getPVDataCreate();
         PVUIntArray pvArray = (PVUIntArray) factory.createPVScalarArray(ScalarType.pvUInt);
-        assertThat(pvArray.get(), instanceOf(ArrayUInt.class));
+        assertThat(pvArray.get(), instanceOf(ArrayUInteger.class));
         pvArray.put(0, CollectionNumbers.toListUInt(0,1,2,3,4,5,6,7,8,9));
         assertThat(pvArray.get(), equalTo(CollectionNumbers.toListUInt(0,1,2,3,4,5,6,7,8,9)));
         pvArray.put(2, CollectionNumbers.toListLong(3,2));
@@ -141,7 +141,7 @@ public class NumericArrayTest extends TestCase {
     public void testPutNumericArray1() {
         PVDataCreate factory = PVDataFactory.getPVDataCreate();
         PVNumberArray pvArray = (PVNumberArray) factory.createPVScalarArray(ScalarType.pvInt);
-        assertThat(pvArray.get(), instanceOf(ArrayInt.class));
+        assertThat(pvArray.get(), instanceOf(ArrayInteger.class));
         pvArray.put(0, CollectionNumbers.toListInt(0,1,2,3,4,5,6,7,8,9));
         assertThat(pvArray.get(), equalTo((ListNumber) CollectionNumbers.toListInt(0,1,2,3,4,5,6,7,8,9)));
         pvArray.put(2, CollectionNumbers.toListInt(3,2));

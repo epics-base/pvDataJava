@@ -4,7 +4,7 @@
  */
 package org.epics.pvdata.pv;
 
-import org.epics.util.array.ArrayUInt;
+import org.epics.util.array.ArrayUInteger;
 
 /**
  * Get/put a int array.
@@ -39,7 +39,7 @@ public interface PVUIntArray extends PVNumberArray{
      * @return an unmodifiable view of the data
      */
     @Override
-    ArrayUInt get();
+    ArrayUInteger get();
 
     /**
      * Put values into a <i>PVIntArray</i> from <i>int[]from</i>.
